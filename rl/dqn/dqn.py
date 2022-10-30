@@ -1,4 +1,5 @@
 from pickletools import optimize
+from turtle import update
 import gym
 import torch
 import numpy as np
@@ -14,25 +15,30 @@ class DQN():
         env:gym.Env, 
         optimizer: torch.optim.Optimizer,
 
-        metric = torch.nn.MSELoss,
+        metric = torch.nn.MSELoss(),
         buffer: ReplayBuffer = ReplayBuffer(), 
         minibatch_size = 128, 
         update_after = 2000,
         gamma = 0.99, 
-        epsilon:float = 0.99 
+        epsilon:float = 0.99,
+        tau = 0.999,
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
     ) -> None:
 
-        self.policy = policy
-        self.dqn_target = copy(policy)
+        self.policy = policy.to(device)
+        self.dqn_target = copy(policy).to(device)
         self.env = env
         self.optimizer = optimizer
         self.metric = metric
         self.buffer = buffer
         self.minibatch_size = minibatch_size
+        self.update_after = update_after
         self.gamma = gamma
         self.epsilon = epsilon
+        self.tau = tau
+        self.device = device
 
-    def train(self, ):
+    def train(self):
         self.policy.train()
         self.optimizer.zero_grad()
 
@@ -44,7 +50,7 @@ class DQN():
         target_q_value = self.dqn_target.forward(nextStates)
 
         # Compute the targets for training
-        targets = rewards + (self.gamma * torch.max(target_q_value, 1).values * (1 - dones))
+        targets = rewards.to(self.device) + (self.gamma * torch.max(target_q_value, 1).values * (1 - dones.to(self.device)))
 
         # compute the predictions for training
         online_q_values = self.policy.forward(states)
@@ -53,7 +59,7 @@ class DQN():
 
         # Update the loss
         loss = self.metric(predictions, targets)
-        loss.backwards(retain_graph=False)
+        loss.backward(retain_graph=False)
         self.optimizer.step()
         
         soft_update(self.policy, self.dqn_target, self.tau)
@@ -70,18 +76,21 @@ class DQN():
             while not done:
                 
                 # epsilon decay
-                epsilon = epsilon
+                epsilon = self.epsilon
 
                 # epsilon greedy action selection
                 if np.random.choice([True,False], p=[epsilon,1-epsilon]):
                     action = np.random.randint(low=0, high=self.policy.num_actions)
                 else:
-                    logits = self.policy.forward(state)
-                    action = torch.argmax()
+                    logits = self.policy.forward(state).detach().cpu().numpy()
+                    action = np.argmax(logits)
 
                 # interact with the environment
-                next_state, r, done, info = self.env.step(action)
+                next_state, r, done, _ = self.env.step(action)
                 episode_return += r
+
+                self.buffer.add(state, action, r, next_state, done)
+                state = next_state
 
                 # update policy using temporal difference
                 if self.buffer.length() > self.minibatch_size and self.buffer.length() > self.update_after:

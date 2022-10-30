@@ -1,25 +1,19 @@
 import gym
 import gym_jumping_task
 import numpy as np
+from rl.dqn.dqn import DQN
+from rl.dqn.policies import CNNDQNNet, DQNPolicy
+from torch import optim
 
 env = gym.make('jumping-task-v0')
 num_actions = 2
-
 num_episodes = 100
 
-state = env.reset()
 
-for i in range(num_episodes):
-    done = False
-    rewards = []
+policy: DQNPolicy = CNNDQNNet(num_actions)
 
-    while not done:
-        action = np.random.randint(low=0, high=num_actions)
-        next_state, r, done, info = env.step(action)
-        rewards.append(r)
+optimizer = optim.Adam(policy.parameters(), lr=0.001)
 
-        state = next_state
-        if done: 
-            print("Done! Episode Reward: ", np.sum(rewards))
-            state = env.reset()
-            break
+dqn = DQN(policy, env, optimizer)
+
+dqn.learn(10000000)
