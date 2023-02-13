@@ -11,7 +11,6 @@ num_episodes = 100
 
 
 policy: DQNPolicy = CNNDQNNet(num_actions)
-
 optimizer = optim.Adam(policy.parameters(), lr=0.001)
 
 dqn = DQN(policy, env, optimizer)

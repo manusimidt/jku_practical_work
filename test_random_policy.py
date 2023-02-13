@@ -1,8 +1,10 @@
 import gym
 import gym_jumping_task
 import numpy as np
+from gym_jumping_task.envs.jumping_task import JumpTaskEnv
 
-env = gym.make('jumping-task-v0')
+# env = gym.make('jumping-task-v0')
+env = JumpTaskEnv(scr_w=60, scr_h=60)
 num_actions = 2
 
 num_episodes = 100

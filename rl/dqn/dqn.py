@@ -54,7 +54,7 @@ class DQN():
 
         # compute the predictions for training
         online_q_values = self.policy.forward(states)
-        action_idx = actions.argmax(axis=1) 
+        action_idx = actions.to(self.device).argmax(axis=1) 
         predictions = online_q_values.gather(1, action_idx.unsqueeze(1)).flatten()
 
         # Update the loss
