@@ -6,11 +6,18 @@ import gym_jumping_task
 import numpy as np
 from stable_baselines3 import DQN, PPO
 from gym import spaces
+from enum import Enum
 
 num_actions = 2
 
-from enum import Enum
 
+class Augmentations(Enum):
+    NONE = 0
+    TRANSLATE = 1
+    FLIP = 2
+    CROP = 3
+    CUTOUT = 4
+    ROTATION = 5
 
 class AugmentingEnv(gym.Env):
     """Custom Environment that follows gym interface."""
@@ -27,7 +34,7 @@ class AugmentingEnv(gym.Env):
                                             shape=(1, 60, 60), dtype=np.uint8)
         self.actualEnv = gym.make('jumping-task-v0')
 
-    def step(self, action, augmentation:):
+    def step(self, action):
         observation, r, done, info = self.actualEnv.step(action)
         return observation.astype('uint8').reshape(1, 60, 60), float(r), done, info
 
@@ -44,7 +51,7 @@ class AugmentingEnv(gym.Env):
 
 env = AugmentingEnv()
 stable_baselines3.common.env_checker.check_env(env)
-model = PPO("MlpPolicy", env, verbose=1)
+model = PPO("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard")
 model.learn(total_timesteps=1000000, log_interval=4)
 
 

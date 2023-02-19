@@ -9,18 +9,6 @@ from gym import spaces
 
 num_actions = 2
 
-
-class Callback(BaseCallback):
-
-    def __init__(self, model):
-        super(Callback, self).__init__()
-        self.count = 0
-        self.model = model
-
-    def _on_step(self) -> bool:
-        print(self.locals)
-        return True
-
 class CustomEnv(gym.Env):
     """Custom Environment that follows gym interface."""
     metadata = {"render.modes": ["human"]}
@@ -53,6 +41,6 @@ class CustomEnv(gym.Env):
          
 env = CustomEnv()
 stable_baselines3.common.env_checker.check_env(env)
-callback = Callback(model=PPO)
-model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=1000000, log_interval=4, callback=callback)
+
+model = PPO("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard")
+model.learn(total_timesteps=500000)

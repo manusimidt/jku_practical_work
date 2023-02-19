@@ -41,5 +41,5 @@ class CustomEnv(gym.Env):
 env = CustomEnv()
 stable_baselines3.common.env_checker.check_env(env)
 
-model = DQN("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=1000000, log_interval=4)
+model = DQN("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard")
+model.learn(total_timesteps=5000000)
