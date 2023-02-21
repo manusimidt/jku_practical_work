@@ -19,7 +19,7 @@ class CustomEnv(gym.Env):
         # Example when using discrete actions:
         self.action_space = spaces.Discrete(num_actions)
         # Example for using image as input (channel-first; channel-last also works):
-        self.observation_space = spaces.Box(low=0, high=1,
+        self.observation_space = spaces.Box(low=0, high=255,
                                             shape=(1, 60, 60), dtype=np.uint8)
         self.actualEnv = gym.make('jumping-task-v0')
 
@@ -29,7 +29,7 @@ class CustomEnv(gym.Env):
 
     def reset(self):
         observation = self.actualEnv.reset()
-        return observation.astype('uint8').reshape(1, 60, 60)  # reward, done, info can't be included
+        return (observation*255).astype('uint8').reshape(1, 60, 60)  # reward, done, info can't be included
 
     def render(self, mode="human"):
         pass
@@ -41,5 +41,5 @@ class CustomEnv(gym.Env):
 env = CustomEnv()
 stable_baselines3.common.env_checker.check_env(env)
 
-model = DQN("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard")
-model.learn(total_timesteps=5000000)
+model = DQN("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard", buffer_size=100_000)
+model.learn(total_timesteps=10000000)
