@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 /gym_jumping_task
+/ckpts
 
 # Distribution / packaging
 .Python

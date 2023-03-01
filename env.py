@@ -1,5 +1,4 @@
 import gym
-import stable_baselines3.common.env_checker
 import numpy as np
 from gym import spaces
 from enum import Enum
