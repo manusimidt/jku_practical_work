@@ -11,3 +11,8 @@
     wget https://raw.githubusercontent.com/google-research/jumping-task/master/gym_jumping_task/envs/jumping_coordinates_task.py -O gym_jumping_task/envs/jumping_coordinates_task.py
     wget https://raw.githubusercontent.com/google-research/jumping-task/master/gym_jumping_task/envs/jumping_task.py -O gym_jumping_task/envs/jumping_task.py
 ```
+
+# these are needed for pyvirtualdisplay (to create a video of the episode)
+``` bash
+apt install -y xvfb x11-utils ffmpeg
+```
