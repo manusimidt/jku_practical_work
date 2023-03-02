@@ -6,7 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
-/gym_jumping_task
+
 /ckpts
 
 # Distribution / packaging
