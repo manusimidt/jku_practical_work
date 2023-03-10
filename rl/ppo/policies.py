@@ -1,33 +1,79 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
-class PPOPolicy(nn.Module):
-    def __init__(self, num_actions, obs_dim) -> None:
-        super().__init__()
-        self.num_actions = num_actions
-        self.obs_dim = obs_dim
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.distributions import Categorical
 
 class ActorNet(nn.Module):
-    """Actor network (policy) """
-    def __init__(self, state_size, action_size, hidden_size):
+    def __init__(self):
         super(ActorNet, self).__init__()
-
-        self.layers = nn.Sequential(
-            nn.Linear(state_size, hidden_size),
-            nn.LayerNorm(hidden_size, elementwise_affine=True),
+        
+        self.features = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=4),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.LayerNorm(hidden_size, elementwise_affine=True),
+            nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3,  stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3,  stride=2),
             nn.ReLU(),
         )
+        self.fc = nn.Sequential(
+            nn.Linear(32*3*3, 128), 
+            nn.ReLU(),
+            nn.Linear(128, 2)
+        )
+        
+    def forward(self, x):
+        x = self.features(x)
+        # convert the images to a matrix with the batch count as first dimension and the features as second dimension
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        # return torch.softmax(x, dim=-1) #-1 to take softmax of last dimension
+        return x
+    
+class CriticNet(nn.Module):
+    def __init__(self):
+        super(CriticNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=4),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3,  stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3,  stride=2),
+            nn.ReLU(),
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(32*3*3, 128), 
+            nn.ReLU(),
+            nn.Linear(128, 1)
+        )
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        return self.fc(x)
 
-        self.fc_mu = nn.Linear(hidden_size, action_size)
-        self.fc_sigma = nn.Linear(hidden_size, action_size)
+    
+class ActorCriticNet(nn.Module):
+    def __init__(self):
+        super(ActorCriticNet, self).__init__()
+        self.actor = ActorNet()
+        self.critic = CriticNet()
 
+    def forward(self, x):
+        raise NotImplementedError
 
-
-
-class ActorCriticCnnPolicy(PPOPolicy):
-    def __init__(self, num_actions:int=2, obs_dim:int = 60) -> None:
-        super().__init__(num_actions, obs_dim)
+    def act(self, state):
+        action_logits = self.actor(state)
+        dist = Categorical(logits=action_logits)
+        action = dist.sample()
+        log_probs = dist.log_prob(action)
+        return action, log_probs
+    
+    def evaluate(self, state, action):
+        action_logits = self.actor(state)
+        policy_dist = Categorical(logits=action_logits)
+        log_probs = policy_dist.log_prob(action)
+        entropy = policy_dist.entropy()
+        state_value = self.critic(state)
+        return state_value, log_probs, entropy

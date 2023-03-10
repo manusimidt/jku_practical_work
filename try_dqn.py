@@ -1,11 +1,9 @@
-import gym
-import gym_jumping_task
-import numpy as np
+from env import RandomAugmentingEnv
 from rl.dqn.dqn import DQN
 from rl.dqn.policies import CNNDQNNet, DQNPolicy
 from torch import optim
 
-env = gym.make('jumping-task-v0')
+env = RandomAugmentingEnv(obs_position=20, floor_height=20)
 num_actions = 2
 num_episodes = 100
 
