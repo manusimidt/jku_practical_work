@@ -2,17 +2,20 @@ import gym
 import torch
 import numpy as np
 
+from rl.common.logger import Tracker
+from rl.common.utils import set_seed
 from rl.common.buffer2 import Episode, Transition, RolloutBuffer
 from rl.ppo.policies import ActorCriticNet
 
 
-class PPO():
+class PPO:
     def __init__(self,
                  policy: ActorCriticNet,
                  env: gym.Env,
                  optimizer: torch.optim.Optimizer,
                  metric=torch.nn.MSELoss(),
                  buffer: RolloutBuffer = RolloutBuffer(),
+                 seed: int or None = None,
                  gamma=0.99,
                  eps_clip=0.2,
                  reward_scale: float = 0.01,
@@ -20,11 +23,13 @@ class PPO():
                  policy_loss_scale: float = 1.0,
                  entropy_loss_scale: float = 0.01,
                  use_buffer_reset=True,
-                 device='cuda' if torch.cuda.is_available() else 'cpu'
+                 tracker: Tracker = Tracker(),  # by default initialize it as an empty tracker
+                 device='cuda' if torch.cuda.is_available() else 'cpu',
                  ) -> None:
         """
         :param gamma: discount rate
         """
+        if seed: set_seed(seed)
         self.policy = policy.to(device)
         self.env = env
         self.optimizer = optimizer
@@ -39,6 +44,7 @@ class PPO():
         self.policy_loss_scale = policy_loss_scale
         self.entropy_loss_scale = entropy_loss_scale
         self.use_buffer_reset = use_buffer_reset
+        self.tracker = tracker
         self.device = device
 
     def train(self) -> None:
@@ -96,6 +102,7 @@ class PPO():
             self.optimizer.zero_grad()
             loss.mean().backward()
             self.optimizer.step()
+            self.tracker.end_epoch()
 
     def learn(self, n_episodes) -> None:
         """
@@ -115,6 +122,7 @@ class PPO():
 
                 # enter action into the env
                 next_state, reward, done, _ = self.env.step(action.item())
+                self.tracker.step(action, reward)
                 episode.total_reward += reward
 
                 # store agent trajectory
@@ -123,6 +131,7 @@ class PPO():
 
                 # update agent if done
                 if done:
+                    self.tracker.end_episode()
                     # add current episode to the replay buffer
                     self.buffer.add(episode)
 
@@ -133,5 +142,5 @@ class PPO():
                     self.train()
                     self.buffer.update_stats()
                     if self.use_buffer_reset: self.buffer.reset()
-                    print(f"Episode: \t{i}\t{episode.total_reward}")
+
                 state = next_state

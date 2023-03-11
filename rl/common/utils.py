@@ -1,3 +1,6 @@
+import random
+import numpy as np
+import torch
 
 
 # Update Target network
@@ -11,4 +14,15 @@ def soft_update(local_model, target_model, tau):
         tau (float): interpolation parameter 
     """
     for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
-        target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
+        target_param.data.copy_(tau * local_param.data + (1.0 - tau) * target_param.data)
+
+
+def set_seed(env, seed=None):
+    if seed is not None:
+        random.seed(seed)
+        env.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)

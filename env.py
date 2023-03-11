@@ -7,6 +7,7 @@ expects image input to be in that range.
 import gym
 import numpy as np
 from gym import spaces
+from typing import List
 import itertools
 import augmentations
 from gym_jumping_task.envs import JumpTaskEnv
@@ -27,16 +28,15 @@ POSSIBLE_AUGMENTATIONS = [
 class VanillaEnv(gym.Env):
     metadata = {"render.modes": ["human"]}
 
-    def __init__(self, obs_positions: tuple = (30,), floor_heights: tuple = (10,)):
+    def __init__(self, configurations: List[tuple] or None = None):
         """
-        :param obs_positions: possible obstacle positions
-        :param floor_heights: possible floor heights
-        The environment will uniformly sample a configuration from the obs_positions and
-        floor_heights
+        :param configurations: possible configurations, array of tuples consisting of
+            the obstacle position and the floor height
         """
         super().__init__()
-        self.obs_positions = obs_positions
-        self.floor_heights = floor_heights
+        # If no configuration was provided, use the default JumpingTask configuration
+        if configurations is None: configurations = [(30, 10), ]
+        self.configurations = configurations
 
         # Jumping env has 2 possible actions
         self.num_actions = 2
@@ -47,7 +47,12 @@ class VanillaEnv(gym.Env):
         self.actualEnv = JumpTaskEnv(obstacle_position=conf[0], floor_height=conf[1])
 
     def _sample_conf(self):
-        return np.random.choice(self.obs_positions), np.random.choice(self.floor_heights)
+        """
+        :return: returns random configuration as a tuple consisting of the obstacle position and
+            the floor height
+        """
+        idx = np.random.choice(len(self.configurations))
+        return self.configurations[idx]
 
     def step(self, action) -> tuple:
         obs, r, done, info = self.actualEnv.step(action)
@@ -69,14 +74,12 @@ class RandomAugmentingEnv(VanillaEnv):
     """Custom Environment that follows gym interface."""
     metadata = {"render.modes": ["human"]}
 
-    def __init__(self, obs_positions: tuple = (30,), floor_heights: tuple = (10,)):
+    def __init__(self, configurations: List[tuple] or None = None):
         """
-        :param obs_positions: possible obstacle positions
-        :param floor_heights: possible floor heights
-        The environment will uniformly sample a configuration from the obs_positions and
-        floor_heights
+        :param configurations: possible configurations, array of tuples consisting of
+            the obstacle position and the floor height
         """
-        super().__init__(obs_positions, floor_heights)
+        super().__init__(configurations)
 
     def step(self, action):
         obs, r, done, info = super().step(action)
