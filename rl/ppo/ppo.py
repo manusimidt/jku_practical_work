@@ -15,6 +15,7 @@ class PPO():
                  buffer: RolloutBuffer = RolloutBuffer(),
                  gamma=0.99,
                  eps_clip=0.2,
+                 reward_scale: float = 0.01,
                  value_loss_scale: float = 0.5,
                  policy_loss_scale: float = 1.0,
                  entropy_loss_scale: float = 0.01,
@@ -24,7 +25,7 @@ class PPO():
         """
         :param gamma: discount rate
         """
-        self.policy = policy
+        self.policy = policy.to(device)
         self.env = env
         self.optimizer = optimizer
         self.metric = metric
@@ -33,6 +34,7 @@ class PPO():
         self.n_epochs = 4
         self.gamma = gamma
         self.eps_clip = eps_clip
+        self.reward_scale = reward_scale
         self.value_loss_scale = value_loss_scale
         self.policy_loss_scale = policy_loss_scale
         self.entropy_loss_scale = entropy_loss_scale
@@ -54,7 +56,7 @@ class PPO():
             actions = []
             old_log_probs = []
             for s in samples:
-                states += [s.state, ]  # todo check if this has to be transformed torch.FloatTensor(state).to(device)
+                states += [torch.FloatTensor(s.state).to(self.device), ]
                 episode_returns += [s.g_return, ]
                 actions += [s.action, ]
                 old_log_probs += [s.log_probs, ]
@@ -98,18 +100,18 @@ class PPO():
     def learn(self, n_episodes) -> None:
         """
         Collect rollouts
+        :param n_episodes: number of full episodes the agent should interact with the environment
         """
-        state = self.env.reset()
-
         for i in range(n_episodes):
+            state = self.env.reset()
             # create a new episode
             episode = Episode(discount=self.gamma)
-
             done = False
             while not done:
                 # select an action from the agent's policy
-                # todo make sure the state is in the correct format!
-                action, log_probs = self.policy.act(state)
+                state_t = torch.FloatTensor(state).to(self.device)
+                state_t = state_t if len(state_t.shape) == 2 else state_t.unsqueeze(0)
+                action, log_probs = self.policy.act(state_t)
 
                 # enter action into the env
                 next_state, reward, done, _ = self.env.step(action.item())
@@ -131,3 +133,5 @@ class PPO():
                     self.train()
                     self.buffer.update_stats()
                     if self.use_buffer_reset: self.buffer.reset()
+                    print(f"Episode: \t{i}\t{episode.total_reward}")
+                state = next_state

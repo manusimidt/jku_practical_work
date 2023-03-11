@@ -8,7 +8,6 @@ import gym
 import numpy as np
 from gym import spaces
 import itertools
-import stable_baselines3.common.env_checker as env_checker
 import augmentations
 from gym_jumping_task.envs import JumpTaskEnv
 
@@ -24,44 +23,39 @@ POSSIBLE_AUGMENTATIONS = [
     {'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
 ]
 
-# obstacle_pos: min: 14, max: 47
-obstacle_positions = np.array(range(14, 48, 2))
-# floor_height: min: 0, max: 40
-floor_heights = np.array(range(0, 41, 3))
-ALL_CONFIGURATIONS = set(itertools.product(obstacle_positions, floor_heights))
-
-# obstacle_pos: min: 14, max: 47
-# floor_height: min: 0, max: 40
-TRAINING_CONFIGURATIONS = set([
-    # (obstacle_pos, floor_height)
-    (22, 18), (22, 24),
-    (26, 18), (26, 24),
-])
-
-TEST_CONFIGURATIONS = ALL_CONFIGURATIONS - TRAINING_CONFIGURATIONS
-
 
 class VanillaEnv(gym.Env):
     metadata = {"render.modes": ["human"]}
 
-    def __init__(self, obs_position=30, floor_height=10):
+    def __init__(self, obs_positions: tuple = (30,), floor_heights: tuple = (10,)):
+        """
+        :param obs_positions: possible obstacle positions
+        :param floor_heights: possible floor heights
+        The environment will uniformly sample a configuration from the obs_positions and
+        floor_heights
+        """
         super().__init__()
-        self.obs_position = obs_position
-        self.floor_height = floor_height
+        self.obs_positions = obs_positions
+        self.floor_heights = floor_heights
 
         # Jumping env has 2 possible actions
         self.num_actions = 2
         self.action_space = spaces.Discrete(self.num_actions)
         self.observation_space = spaces.Box(low=0, high=255,
                                             shape=(1, 60, 60), dtype=np.uint8)
-        self.actualEnv = JumpTaskEnv(obstacle_position=obs_position, floor_height=floor_height)
+        conf = self._sample_conf()
+        self.actualEnv = JumpTaskEnv(obstacle_position=conf[0], floor_height=conf[1])
+
+    def _sample_conf(self):
+        return np.random.choice(self.obs_positions), np.random.choice(self.floor_heights)
 
     def step(self, action) -> tuple:
         obs, r, done, info = self.actualEnv.step(action)
         return (obs * 255).astype('uint8').reshape(1, 60, 60), float(r), done, info
 
     def reset(self) -> np.ndarray:
-        obs = self.actualEnv._reset(floor_height=self.floor_height, obstacle_position=self.obs_position)
+        conf = self._sample_conf()
+        obs = self.actualEnv._reset(obstacle_position=conf[0], floor_height=conf[1])
         return (obs * 255).astype('uint8').reshape(1, 60, 60)
 
     def render(self, mode="human"):
@@ -75,30 +69,37 @@ class RandomAugmentingEnv(VanillaEnv):
     """Custom Environment that follows gym interface."""
     metadata = {"render.modes": ["human"]}
 
-    def __init__(self, obs_position=30, floor_height=10):
-        super().__init__(obs_position, floor_height)
+    def __init__(self, obs_positions: tuple = (30,), floor_heights: tuple = (10,)):
+        """
+        :param obs_positions: possible obstacle positions
+        :param floor_heights: possible floor heights
+        The environment will uniformly sample a configuration from the obs_positions and
+        floor_heights
+        """
+        super().__init__(obs_positions, floor_heights)
 
     def step(self, action):
+        obs, r, done, info = super().step(action)
+        # TODO do the augmentation
         idx = np.random.choice(range(len(POSSIBLE_AUGMENTATIONS)))
         augmentation = POSSIBLE_AUGMENTATIONS[idx]
-
-        obs, r, done, info = self.actualEnv.step(action)
         # convert the observation in the needed format (B x C x H x W) [0..255] int8
         # observation = np.expand_dims(np.array([observation * 255], dtype=np.uint8), axis=1)
         # augment the observation
         # aug_obs = augmentation['func'](observation, **augmentation['params'])
         # The augmented observation can have a different width and height!!
         # compensate for that
-
-        return (obs * 255).astype('uint8').reshape(1, 60, 60), float(r), done, info
+        return obs, r, done, info
 
     def reset(self):
-        obs = self.actualEnv._reset(floor_height=self.floor_height, obstacle_position=self.obs_position)
+        obs = super().reset()
         # TODO augment observation!
-        return (obs * 255).astype('uint8').reshape(1, 60, 60)  # reward, done, info can't be included
+        return obs
 
 
 if __name__ == '__main__':
+    import stable_baselines3.common.env_checker as env_checker
+
     _envs = [VanillaEnv(), RandomAugmentingEnv()]
     for _env in _envs:
         env_checker.check_env(_env)

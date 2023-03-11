@@ -67,13 +67,14 @@ class DQN():
 
         soft_update(self.policy, self.dqn_target, self.tau)
 
-    def learn(self, n_epochs: int) -> None:
+    def learn(self, n_episodes: int) -> None:
         """
         Collect rollouts
+        :param n_episodes: number of full episodes the agent should interact with the environment
         """
         state = self.env.reset()
 
-        for i in range(n_epochs):
+        for i in range(n_episodes):
             episode_return = 0
             done = False
             while not done:

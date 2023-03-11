@@ -24,6 +24,10 @@ class ActorNet(nn.Module):
         )
         
     def forward(self, x):
+        # make sure the data is a tensor on the correct device
+        device = next(self.parameters()).device
+        x = x.to(device, dtype=torch.float32)
+
         x = self.features(x)
         # convert the images to a matrix with the batch count as first dimension and the features as second dimension
         x = x.view(x.size(0), -1)
@@ -49,6 +53,10 @@ class CriticNet(nn.Module):
         )
         
     def forward(self, x):
+        # make sure the data is a tensor on the correct device
+        device = next(self.parameters()).device
+        x = x.to(device, dtype=torch.float32)
+
         x = self.features(x)
         x = x.view(x.size(0), -1)
         return self.fc(x)

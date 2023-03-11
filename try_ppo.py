@@ -1,12 +1,10 @@
-import gym
-import gym_jumping_task
-
 from rl.ppo.policies import ActorCriticNet
 from torch import optim
-
+from env import VanillaEnv
 from rl.ppo.ppo import PPO
 
-env = gym.make('jumping-task-v0')
+# env = VanillaEnv(obs_positions=(30, 15), floor_heights=(20, 15, 30))
+env = VanillaEnv()
 num_actions = 2
 num_episodes = 100
 

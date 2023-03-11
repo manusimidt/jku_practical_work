@@ -18,7 +18,7 @@ class ReplayBuffer():
         minibatch = random.sample(self.transition, batch_size)
         states_mb, a_, reward_mb, next_states_mb, done_mb = map(np.array, zip(*minibatch))
 
-        mb_reward = torch.from_numpy(reward_mb)
+        mb_reward = torch.from_numpy(reward_mb).type(torch.float32)
         mb_done = torch.from_numpy(done_mb.astype(int))
         a_ = a_.astype(int)
         a_mb = np.zeros((a_.size, self.num_actions), dtype=np.float32)
