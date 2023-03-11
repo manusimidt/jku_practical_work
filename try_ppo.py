@@ -1,13 +1,13 @@
 from rl.common.logger import ConsoleLogger, TensorboardLogger, Tracker
 from rl.ppo.policies import ActorCriticNet
+from rl.ppo.ppo import PPO
 from torch import optim
 from env import VanillaEnv
-from rl.ppo.ppo import PPO
 
 possible_configurations = [(30, 10), (28, 10), (32, 10), (26, 10), (34, 10),
                            (30, 14), (28, 14), (32, 14), (26, 14), (34, 14)]
 
-for i in range(1, len(possible_configurations)):
+for i in range(10, len(possible_configurations)+1):
     current_configurations = possible_configurations[:i]
     print(current_configurations)
     env = VanillaEnv(configurations=current_configurations)

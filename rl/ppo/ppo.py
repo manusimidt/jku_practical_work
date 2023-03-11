@@ -1,3 +1,5 @@
+import os
+
 import gym
 import torch
 import numpy as np
@@ -144,3 +146,22 @@ class PPO:
                     if self.use_buffer_reset: self.buffer.reset()
 
                 state = next_state
+
+    def save(self, checkpoint_dir: str, name: str = 'PPO') -> str:
+        """
+        Saves the model
+        :param checkpoint_dir: folder to which the model should be saved to
+        :param name: name of the checkpoint file
+        :return: returns the path to which the model was saved to
+        """
+        state = {
+            'state_dict': self.policy.state_dict(),
+            'optimizer': self.optimizer.state_dict()
+        }
+        cpt_path = f"{checkpoint_dir}{os.sep}{name}.pth"
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        torch.save(state, cpt_path)
+        return cpt_path
+
+    def load(self, path: str):
+        pass

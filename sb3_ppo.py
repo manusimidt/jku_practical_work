@@ -10,9 +10,8 @@ from gym import spaces
 from env import RandomAugmentingEnv, VanillaEnv
 
 num_actions = 2
-         
-env = VanillaEnv(configurations=[(22, 18), (22, 24), (26, 18), (26, 24)])
 
+env = VanillaEnv(configurations=[(22, 18), (22, 24), (26, 18), (26, 24)])
 
 stable_baselines3.common.env_checker.check_env(env)
 

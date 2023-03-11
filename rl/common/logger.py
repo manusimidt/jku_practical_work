@@ -1,8 +1,10 @@
 import abc
 import os
 from pathlib import Path
+import numpy as np
 from datetime import datetime
-
+import matplotlib.pyplot as plt
+import matplotlib
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -60,6 +62,56 @@ class TensorboardLogger(Logger):
     def on_episode_end(self, episode: int, **kwargs):
         self.writer.add_scalar('rollout/ep_return', kwargs['episode_return'], episode)
         self.writer.add_scalar('rollout/ep_length', kwargs['episode_length'], episode)
+
+
+class FigureLogger(Logger):
+    """
+    Stores all necessary information to be able to return a nice figure at the end
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.episode_returns = []
+        self.episode_lengths = []
+
+    def on_step(self, step: int, **kwargs):
+        pass
+
+    def on_epoch_end(self, epoch: int, **kwargs):
+        pass
+
+    def on_episode_end(self, episode: int, **kwargs):
+        self.episode_returns.append(kwargs['episode_return'])
+        self.episode_lengths.append(kwargs['episode_length'])
+        pass
+
+    def get_figure(self, fig_size=(16, 8)) -> matplotlib.figure:
+        def get_running_stat(stat, stat_len):
+            # evaluate stats
+            cum_sum = np.cumsum(np.insert(stat, 0, 0))
+            return (cum_sum[stat_len:] - cum_sum[:-stat_len]) / stat_len
+
+        episode_nr = np.array(range(1, len(self.episode_returns) + 1))
+        cum_r = get_running_stat(self.episode_returns, 10)
+        cum_l = get_running_stat(self.episode_lengths, 10)
+        fig: plt.Figure = plt.figure(figsize=fig_size)
+
+        plot1 = fig.add_subplot(121)
+
+        # plot rewards
+        plot1.plot(episode_nr[-len(cum_r):], cum_r)
+        plot1.plot(episode_nr, self.episode_returns, alpha=0.5)
+        plot1.set_xlabel('Episode')
+        plot1.set_ylabel('Episode Reward')
+
+        plot2 = fig.add_subplot(122)
+
+        # plot episode lengths
+        plot2.plot(episode_nr[-len(cum_l):], cum_l)
+        plot2.plot(episode_nr, self.episode_lengths, alpha=0.5)
+        plot2.set_xlabel('Episode')
+        plot2.set_ylabel('Episode Length')
+        return fig
 
 
 class WeightsAndBiasesLogger:

@@ -5,12 +5,12 @@ import numpy as np
 from stable_baselines3 import DQN
 from gym import spaces
 
-from env import RandomAugmentingEnv
+from env import RandomAugmentingEnv, VanillaEnv
 
 num_actions = 2
 
 
-env = RandomAugmentingEnv(obs_position=20, floor_height=20)
+env = VanillaEnv(configurations=[(22, 18), (22, 24), (26, 18), (26, 24)])
 
 stable_baselines3.common.env_checker.check_env(env)
 
