@@ -1,5 +1,6 @@
 import abc
 import os
+from collections import deque
 from pathlib import Path
 import numpy as np
 from datetime import datetime
@@ -10,7 +11,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 class Logger(abc.ABC):
     """ Extracts and/or persists tracker information. """
-
     def __init__(self):
         pass
 
@@ -29,12 +29,15 @@ class Logger(abc.ABC):
 
 
 class ConsoleLogger(Logger):
-    def __init__(self, log_every: int = 1):
+    def __init__(self, log_every: int = 1, average_over: int or None = None):
         """
         :param log_every: log every nth episode
+        :param average_over: number of episodes the metrics should be averaged over
         """
         super().__init__()
         self.log_every = log_every
+        self.average_over = average_over if average_over else log_every
+        self.return_queue = deque(maxlen=average_over)
 
     def on_step(self, step: int, **kwargs):
         pass
@@ -43,8 +46,10 @@ class ConsoleLogger(Logger):
         pass
 
     def on_episode_end(self, episode: int, **kwargs):
+        self.return_queue.append(kwargs['episode_return'])
         if not episode % self.log_every == 0: return
-        print(f"Episode: {str(episode).rjust(6)}, return: {kwargs['episode_return']}")
+        msg = f"Episode: {str(episode).rjust(6)}, ret: {np.mean(self.return_queue)} (avg. over {self.average_over} episodes)"
+        print(msg)
 
 
 class TensorboardLogger(Logger):

@@ -163,5 +163,12 @@ class PPO:
         torch.save(state, cpt_path)
         return cpt_path
 
-    def load(self, path: str):
-        pass
+    def load(self, path: str) -> None:
+        """
+        Loads the weights from the checkpoint file
+        :param path: path to the checkpoint file
+        :return:
+        """
+        ckp: dict = torch.load(path, map_location=self.device)
+        self.policy.load_state_dict(ckp['state_dict'])
+        self.optimizer.load_state_dict(ckp['optimizer'])
