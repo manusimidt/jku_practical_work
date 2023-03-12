@@ -1,19 +1,14 @@
-import gym
 import stable_baselines3.common.env_checker
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3 import PPO
+from env import VanillaEnv
 
-import gym_jumping_task
-import numpy as np
-from stable_baselines3 import DQN, PPO
-from gym import spaces
-
-from env import RandomAugmentingEnv, VanillaEnv
-
-num_actions = 2
-
-env = VanillaEnv(configurations=[(22, 18), (22, 24), (26, 18), (26, 24)])
+env = VanillaEnv(configurations=[
+    (26, 12), (29, 12), (31, 12), (34, 12),
+    (26, 20), (29, 20), (31, 20), (34, 20),
+    (26, 28), (29, 28), (31, 28), (34, 28),
+])
 
 stable_baselines3.common.env_checker.check_env(env)
 
 model = PPO("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard")
-model.learn(total_timesteps=10000000)
+model.learn(total_timesteps=1_000_000)

@@ -27,8 +27,12 @@ POSSIBLE_AUGMENTATIONS = [
 
 class VanillaEnv(gym.Env):
     metadata = {"render.modes": ["human"]}
+    min_obstacle_pos = 14
+    max_obstacle_pos = 47
+    min_floor_height = 0
+    max_floor_height = 40
 
-    def __init__(self, configurations: List[tuple] or None = None):
+    def __init__(self, configurations: List[tuple] or None = None, rendering=False):
         """
         :param configurations: possible configurations, array of tuples consisting of
             the obstacle position and the floor height
@@ -44,7 +48,7 @@ class VanillaEnv(gym.Env):
         self.observation_space = spaces.Box(low=0, high=255,
                                             shape=(1, 60, 60), dtype=np.uint8)
         conf = self._sample_conf()
-        self.actualEnv = JumpTaskEnv(obstacle_position=conf[0], floor_height=conf[1])
+        self.actualEnv = JumpTaskEnv(obstacle_position=conf[0], floor_height=conf[1], rendering=rendering)
 
     def _sample_conf(self):
         """
@@ -74,12 +78,12 @@ class RandomAugmentingEnv(VanillaEnv):
     """Custom Environment that follows gym interface."""
     metadata = {"render.modes": ["human"]}
 
-    def __init__(self, configurations: List[tuple] or None = None):
+    def __init__(self, configurations: List[tuple] or None = None, rendering=False):
         """
         :param configurations: possible configurations, array of tuples consisting of
             the obstacle position and the floor height
         """
-        super().__init__(configurations)
+        super().__init__(configurations, rendering)
 
     def step(self, action):
         obs, r, done, info = super().step(action)

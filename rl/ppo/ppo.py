@@ -147,28 +147,31 @@ class PPO:
 
                 state = next_state
 
-    def save(self, checkpoint_dir: str, name: str = 'PPO') -> str:
+    def save(self, checkpoint_dir: str, name: str = 'PPO', info: dict or None = None) -> str:
         """
         Saves the model
         :param checkpoint_dir: folder to which the model should be saved to
         :param name: name of the checkpoint file
+        :param info: any additional info you want to store into the model file
         :return: returns the path to which the model was saved to
         """
         state = {
             'state_dict': self.policy.state_dict(),
-            'optimizer': self.optimizer.state_dict()
+            'optimizer': self.optimizer.state_dict(),
+            'info': info
         }
         cpt_path = f"{checkpoint_dir}{os.sep}{name}.pth"
         os.makedirs(checkpoint_dir, exist_ok=True)
         torch.save(state, cpt_path)
         return cpt_path
 
-    def load(self, path: str) -> None:
+    def load(self, path: str) -> dict:
         """
         Loads the weights from the checkpoint file
         :param path: path to the checkpoint file
-        :return:
+        :return: returns the info
         """
         ckp: dict = torch.load(path, map_location=self.device)
         self.policy.load_state_dict(ckp['state_dict'])
         self.optimizer.load_state_dict(ckp['optimizer'])
+        return ckp['info'] if 'info' in ckp else None

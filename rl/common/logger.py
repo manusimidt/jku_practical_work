@@ -48,7 +48,8 @@ class ConsoleLogger(Logger):
     def on_episode_end(self, episode: int, **kwargs):
         self.return_queue.append(kwargs['episode_return'])
         if not episode % self.log_every == 0: return
-        msg = f"Episode: {str(episode).rjust(6)}, ret: {np.mean(self.return_queue)} (avg. over {self.average_over} episodes)"
+        msg = f"Episode: {str(episode).rjust(6)}, avg.ret.: {np.mean(self.return_queue):.4f} " \
+              f"(over last {self.average_over} episodes)"
         print(msg)
 
 
