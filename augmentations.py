@@ -125,3 +125,7 @@ def random_rotation(images: np.ndarray, device, p=.5):
 
     out = out.view([bs, -1, h, w])
     return out.type(torch.uint8).numpy()
+
+
+def identity(images: np.ndarray):
+    return images
