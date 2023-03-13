@@ -16,16 +16,18 @@ import torchvision.transforms.functional as fn
 
 POSSIBLE_AUGMENTATIONS = [
     {'func': augmentations.identity, 'params': {}},
-    {'func': augmentations.identity, 'params': {}},
-    {'func': augmentations.random_translate, 'params': {'size': 70}},
-    {'func': augmentations.random_translate, 'params': {'size': 80}},
-    {'func': augmentations.random_translate, 'params': {'size': 90}},
-    {'func': augmentations.random_crop, 'params': {'out': 55}},
-    {'func': augmentations.random_crop, 'params': {'out': 50}},
-    {'func': augmentations.random_crop, 'params': {'out': 45}},
-    {'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
-    {'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
-    {'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
+    # {'func': augmentations.identity, 'params': {}},
+    # todo probably best to shift the image just by a few pixels and not 10, 20 and 30
+    # See learning invariances for policy generalization Paper
+    {'func': augmentations.random_translate, 'params': {'size': 64}},
+    {'func': augmentations.random_translate, 'params': {'size': 68}},
+    {'func': augmentations.random_translate, 'params': {'size': 72}},
+     #{'func': augmentations.random_crop, 'params': {'out': 55}},
+     #{'func': augmentations.random_crop, 'params': {'out': 50}},
+     #{'func': augmentations.random_crop, 'params': {'out': 45}},
+     #{'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
+     #{'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
+     #{'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
 ]
 
 
@@ -121,7 +123,7 @@ class RandomAugmentingEnv(VanillaEnv):
 
 
 class UCBAugmentingEnv(RandomAugmentingEnv):
-    def __init__(self, configurations: List[tuple] or None = None, rendering=False, c=0.4):
+    def __init__(self, configurations: List[tuple] or None = None, rendering=False, c=2):
         """
         :param configurations: possible configurations, array of tuples consisting of
             the obstacle position and the floor height
@@ -144,7 +146,6 @@ class UCBAugmentingEnv(RandomAugmentingEnv):
             self.curr_aug_idx = np.where(self.N == 0)[0][0]
         else:
             self.curr_aug_idx = np.argmax(self.Q + self.c * np.sqrt(np.log(self.t) / self.N))
-        self.N[self.curr_aug_idx] += 1
         self.current_augmentation = POSSIBLE_AUGMENTATIONS[self.curr_aug_idx]
 
     def step(self, action):
@@ -158,6 +159,7 @@ class UCBAugmentingEnv(RandomAugmentingEnv):
         curr_aug = self.curr_aug_idx
         # Make sure that this is not the first reset called before a step
         if curr_aug is not None:
+            self.N[curr_aug] += 1
             self.Q[curr_aug] = self.Q[curr_aug] + 1 / self.N[curr_aug] * (self.episode_return - self.Q[curr_aug])
             self.t += 1
             # reset episode return
