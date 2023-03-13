@@ -18,7 +18,8 @@ class ActorNet(nn.Module):
             nn.ReLU(),
         )
         self.fc = nn.Sequential(
-            nn.Linear(32*3*3, 128), 
+            nn.Linear(32*3*3, 128),
+            nn.LayerNorm(128, elementwise_affine=False),
             nn.ReLU(),
             nn.Linear(128, 2)
         )
@@ -47,7 +48,8 @@ class CriticNet(nn.Module):
             nn.ReLU(),
         )
         self.fc = nn.Sequential(
-            nn.Linear(32*3*3, 128), 
+            nn.Linear(32*3*3, 128),
+            nn.LayerNorm(128, elementwise_affine=False),
             nn.ReLU(),
             nn.Linear(128, 1)
         )

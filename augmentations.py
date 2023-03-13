@@ -127,5 +127,10 @@ def random_rotation(images: np.ndarray, device, p=.5):
     return out.type(torch.uint8).numpy()
 
 
+def random_noise(images: np.ndarray, strength=0.05):
+    noise = np.random.normal(0, strength, size=images.shape)
+    return images + noise
+
+
 def identity(images: np.ndarray):
     return images

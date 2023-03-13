@@ -2,7 +2,7 @@ from rl.common.logger import ConsoleLogger, TensorboardLogger, Tracker
 from rl.ppo.policies import ActorCriticNet
 from rl.ppo.ppo import PPO
 from torch import optim
-from env import VanillaEnv, RandomAugmentingEnv
+from env import VanillaEnv, AugmentingEnv
 
 train_conf = {
     "narrow_grid": {
@@ -28,7 +28,7 @@ train_conf = {
 for conf_name in train_conf.keys():
     print(f"====== Training on {conf_name} ======")
     current_configurations = list(train_conf[conf_name])
-    env = RandomAugmentingEnv(configurations=current_configurations)
+    env = AugmentingEnv(configurations=current_configurations)
 
     policy: ActorCriticNet = ActorCriticNet()
     optimizer = optim.Adam(policy.parameters(), lr=0.001)

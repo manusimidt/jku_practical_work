@@ -16,18 +16,19 @@ import torchvision.transforms.functional as fn
 
 POSSIBLE_AUGMENTATIONS = [
     {'func': augmentations.identity, 'params': {}},
-    # {'func': augmentations.identity, 'params': {}},
-    # todo probably best to shift the image just by a few pixels and not 10, 20 and 30
-    # See learning invariances for policy generalization Paper
+    {'func': augmentations.identity, 'params': {}},
+    {'func': augmentations.identity, 'params': {}},
     {'func': augmentations.random_translate, 'params': {'size': 64}},
     {'func': augmentations.random_translate, 'params': {'size': 68}},
     {'func': augmentations.random_translate, 'params': {'size': 72}},
-     #{'func': augmentations.random_crop, 'params': {'out': 55}},
-     #{'func': augmentations.random_crop, 'params': {'out': 50}},
-     #{'func': augmentations.random_crop, 'params': {'out': 45}},
-     #{'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
-     #{'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
-     #{'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
+    {'func': augmentations.random_crop, 'params': {'out': 59}},
+    {'func': augmentations.random_crop, 'params': {'out': 58}},
+    {'func': augmentations.random_crop, 'params': {'out': 57}},
+    {'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
+    {'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
+    {'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
+    {'func': augmentations.random_noise, 'params': {'strength': 0.02}},
+    {'func': augmentations.random_noise, 'params': {'strength': 0.05}},
 ]
 
 
@@ -53,8 +54,7 @@ class VanillaEnv(gym.Env):
         self.action_space = spaces.Discrete(self.num_actions)
         self.observation_space = spaces.Box(low=0, high=255,
                                             shape=(1, 60, 60), dtype=np.uint8)
-        conf = self._sample_conf()
-        self.actualEnv = JumpTaskEnv(obstacle_position=conf[0], floor_height=conf[1], rendering=rendering)
+        self.actualEnv = JumpTaskEnv(rendering=rendering)
 
     def _sample_conf(self):
         """
@@ -66,12 +66,12 @@ class VanillaEnv(gym.Env):
 
     def step(self, action) -> tuple:
         obs, r, done, info = self.actualEnv.step(action)
-        return (obs * 255).astype('uint8').reshape(1, 60, 60), float(r), done, info
+        return np.expand_dims((obs * 255).astype('uint8'), axis=0), float(r), done, info
 
     def reset(self) -> np.ndarray:
         conf = self._sample_conf()
         obs = self.actualEnv._reset(obstacle_position=conf[0], floor_height=conf[1])
-        return (obs * 255).astype('uint8').reshape(1, 60, 60)
+        return np.expand_dims((obs * 255).astype('uint8'), axis=0)
 
     def render(self, mode="human"):
         pass
@@ -80,7 +80,7 @@ class VanillaEnv(gym.Env):
         self.actualEnv.close()
 
 
-class RandomAugmentingEnv(VanillaEnv):
+class AugmentingEnv(VanillaEnv):
     """Custom Environment that follows gym interface."""
     metadata = {"render.modes": ["human"]}
 
@@ -91,18 +91,26 @@ class RandomAugmentingEnv(VanillaEnv):
         """
         super().__init__(configurations, rendering)
         self.current_augmentation = None
-        self._sample_augmentation()
 
     def step(self, action):
+        aug_obs, _, r, done, info = self.step_augmented(action)
+        return aug_obs, r, done, info
+
+    def step_augmented(self, action):
+        # returns both the augmented state and the not augmented state
         obs, r, done, info = super().step(action)
-        return self._augment(obs), r, done, info
+        return self._augment(obs), obs, r, done, info
 
     def reset(self):
+        aug_obs, _ = self.reset_augmented()
+        return aug_obs
+
+    def reset_augmented(self):
         obs = super().reset()
-        aug_obs = self._augment(obs)
         # sample a new augmentation
         self._sample_augmentation()
-        return aug_obs
+        aug_obs = self._augment(obs)
+        return aug_obs, obs
 
     def _sample_augmentation(self):
         idx = np.random.choice(range(len(POSSIBLE_AUGMENTATIONS)))
@@ -122,7 +130,7 @@ class RandomAugmentingEnv(VanillaEnv):
         return aug_obs
 
 
-class UCBAugmentingEnv(RandomAugmentingEnv):
+class UCBAugmentingEnv(AugmentingEnv):
     def __init__(self, configurations: List[tuple] or None = None, rendering=False, c=2):
         """
         :param configurations: possible configurations, array of tuples consisting of
@@ -147,14 +155,23 @@ class UCBAugmentingEnv(RandomAugmentingEnv):
         else:
             self.curr_aug_idx = np.argmax(self.Q + self.c * np.sqrt(np.log(self.t) / self.N))
         self.current_augmentation = POSSIBLE_AUGMENTATIONS[self.curr_aug_idx]
+        print("new augmentation: ", self.current_augmentation)
 
     def step(self, action):
-        obs, r, done, info = super().step(action)
+        aug_obs, _, r, done, info = self.step_augmented(action)
+        return aug_obs, r, done, info
+
+    def step_augmented(self, action):
+        aug_obs, obs, r, done, info = super().step_augmented(action)
         # collect the return for UCB calculation
         self.episode_return += r
-        return obs, r, done, info
+        return aug_obs, obs, r, done, info
 
     def reset(self):
+        aug_obs, _ = self.reset_augmented()
+        return aug_obs
+
+    def reset_augmented(self):
         # Update Q
         curr_aug = self.curr_aug_idx
         # Make sure that this is not the first reset called before a step
@@ -164,13 +181,12 @@ class UCBAugmentingEnv(RandomAugmentingEnv):
             self.t += 1
             # reset episode return
             self.episode_return = 0
-        return super().reset()
-
+        return super().reset_augmented()
 
 if __name__ == '__main__':
     import stable_baselines3.common.env_checker as env_checker
 
-    _envs = [VanillaEnv(), RandomAugmentingEnv(), UCBAugmentingEnv()]
+    _envs = [VanillaEnv(), AugmentingEnv(), UCBAugmentingEnv()]
     for _env in _envs:
         env_checker.check_env(_env)
         _obs_arr = [_env.reset(), _env.step(0)[0], _env.step(0)[0], _env.step(0)[0], _env.step(1)[0]]

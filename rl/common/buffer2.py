@@ -10,6 +10,10 @@ class Transition(object):
         self.g_return = 0.0
         self.log_probs = log_probs
 
+class AugmentedTransition(Transition):
+    def __init__(self, state, augmented_state, action, reward, log_probs):
+        super().__init__(state, action, reward, log_probs)
+        self.augmented_state = augmented_state
 
 class Episode(object):
     def __init__(self, discount):
