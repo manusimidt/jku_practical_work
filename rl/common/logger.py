@@ -68,6 +68,8 @@ class TensorboardLogger(Logger):
     def on_episode_end(self, episode: int, **kwargs):
         self.writer.add_scalar('rollout/ep_return', kwargs['episode_return'], episode)
         self.writer.add_scalar('rollout/ep_length', kwargs['episode_length'], episode)
+        if 'aug_counts' in kwargs and kwargs['aug_counts']:
+            self.writer.add_scalars('aug/ucb_counts', kwargs['aug_counts'], episode)
 
 
 class FigureLogger(Logger):
@@ -148,12 +150,18 @@ class Tracker:
         for logger in self.loggers:
             logger.on_epoch_end(self.epoch)
 
-    def end_episode(self):
+    def end_episode(self, aug_counts: list or None = None):
+        """
+        Ends the episode.
+        :param aug_counts: optionally log how often a certain augmentation was chosen
+        :return:
+        """
         self.episode += 1
         episode_length = self.steps - self.step_pointer
 
         for logger in self.loggers:
-            logger.on_episode_end(self.episode, episode_return=self.episode_return, episode_length=episode_length)
+            logger.on_episode_end(self.episode, episode_return=self.episode_return, episode_length=episode_length,
+                                  aug_counts=aug_counts)
 
         # reset rolling stats
         self.step_pointer = self.steps

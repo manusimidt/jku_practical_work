@@ -11,24 +11,23 @@ from gym import spaces
 from typing import List
 import itertools
 import augmentations
+
 from gym_jumping_task.envs import JumpTaskEnv
 import torchvision.transforms.functional as fn
 
 POSSIBLE_AUGMENTATIONS = [
-    {'func': augmentations.identity, 'params': {}},
-    {'func': augmentations.identity, 'params': {}},
-    {'func': augmentations.identity, 'params': {}},
-    {'func': augmentations.random_translate, 'params': {'size': 64}},
-    {'func': augmentations.random_translate, 'params': {'size': 68}},
-    {'func': augmentations.random_translate, 'params': {'size': 72}},
-    {'func': augmentations.random_crop, 'params': {'out': 59}},
-    {'func': augmentations.random_crop, 'params': {'out': 58}},
-    {'func': augmentations.random_crop, 'params': {'out': 57}},
-    {'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
-    {'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
-    {'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
-    {'func': augmentations.random_noise, 'params': {'strength': 0.02}},
-    {'func': augmentations.random_noise, 'params': {'strength': 0.05}},
+    {'name': 'I', 'func': augmentations.identity, 'params': {}},
+    {'name': 'trans64', 'func': augmentations.random_translate, 'params': {'size': 64}},
+    {'name': 'trans68', 'func': augmentations.random_translate, 'params': {'size': 68}},
+    {'name': 'trans72', 'func': augmentations.random_translate, 'params': {'size': 72}},
+    {'name': 'crop59', 'func': augmentations.random_crop, 'params': {'out': 59}},
+    {'name': 'crop58', 'func': augmentations.random_crop, 'params': {'out': 58}},
+    {'name': 'crop57', 'func': augmentations.random_crop, 'params': {'out': 57}},
+    {'name': 'cut5', 'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
+    {'name': 'cut15', 'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
+    {'name': 'cut20', 'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
+    {'name': 'noise1', 'func': augmentations.random_noise, 'params': {'strength': 0.02}},
+    {'name': 'noise2', 'func': augmentations.random_noise, 'params': {'strength': 0.05}},
 ]
 
 
@@ -155,7 +154,6 @@ class UCBAugmentingEnv(AugmentingEnv):
         else:
             self.curr_aug_idx = np.argmax(self.Q + self.c * np.sqrt(np.log(self.t) / self.N))
         self.current_augmentation = POSSIBLE_AUGMENTATIONS[self.curr_aug_idx]
-        print("new augmentation: ", self.current_augmentation)
 
     def step(self, action):
         aug_obs, _, r, done, info = self.step_augmented(action)

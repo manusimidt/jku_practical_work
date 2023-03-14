@@ -4,6 +4,7 @@ import gym
 import torch
 import numpy as np
 
+import env
 from rl.common.logger import Tracker
 from rl.common.utils import set_seed
 from rl.common.buffer2 import Episode, Transition, RolloutBuffer
@@ -133,7 +134,12 @@ class PPO:
 
                 # update agent if done
                 if done:
-                    self.tracker.end_episode()
+                    if isinstance(self.env, env.UCBAugmentingEnv):
+                        aug_names = [a['name'] for a in env.POSSIBLE_AUGMENTATIONS]
+                        aug_counts = dict(zip(aug_names, self.env.N))
+                        self.tracker.end_episode(aug_counts=aug_counts)
+                    else:
+                        self.tracker.end_episode()
                     # add current episode to the replay buffer
                     self.buffer.add(episode)
 
