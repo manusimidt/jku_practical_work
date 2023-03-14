@@ -1,8 +1,8 @@
 from rl.common.logger import ConsoleLogger, TensorboardLogger, Tracker
 from rl.ppo.policies import ActorCriticNet
-from rl.ppo.ppo import PPO
 from torch import optim
 from env import VanillaEnv, AugmentingEnv, UCBAugmentingEnv
+from rl.ppo.drac_ppo import DrACPPO
 
 train_conf = {
     "narrow_grid": {
@@ -24,22 +24,20 @@ train_conf = {
         (36, 4), (38, 16), (43, 12), (44, 28),
     }
 }
-#environment = 'vanilla'
-#environment = 'random'
+# environment = 'random'
 environment = 'UCB'
 
 
 for conf_name in train_conf.keys():
     current_configurations = list(train_conf[conf_name])
     env = None
-    if 'vanilla' in environment:
-        env = VanillaEnv(configurations=current_configurations)
-    elif 'random' in environment:
+
+    if 'random' in environment:
         env = AugmentingEnv(configurations=current_configurations)
     else:
-        env = UCBAugmentingEnv(configurations=current_configurations, c=170)
+        env = UCBAugmentingEnv(configurations=current_configurations, c=200)
 
-    run_name = environment + '-' + conf_name
+    run_name = 'DRAC-0.000-'+environment + '-' + conf_name
     print(f"====== Training {run_name} ======")
 
     policy: ActorCriticNet = ActorCriticNet()
@@ -49,9 +47,9 @@ for conf_name in train_conf.keys():
     logger2 = TensorboardLogger('./tensorboard2', run_id=run_name)
     tracker = Tracker(logger1, logger2)
 
-    ppo = PPO(policy, env, optimizer, seed=31, tracker=tracker)
-    print("Training on ", ppo.device)
-    ppo.learn(15_000)
-    ppo.save('./ckpts', run_name + '-15000', info={'conf': list(train_conf[conf_name])})
-    ppo.learn(15_000)
-    ppo.save('./ckpts', run_name + '-30000', info={'conf': list(train_conf[conf_name])})
+    drac = DrACPPO(policy, env, optimizer, seed=31, tracker=tracker, alpha=0.00)
+    print("Training on ", drac.device)
+    drac.learn(15_000)
+    drac.save('./ckpts', run_name + '-15000', info={'conf': list(train_conf[conf_name])})
+    drac.learn(15_000)
+    drac.save('./ckpts', run_name + '-30000', info={'conf': list(train_conf[conf_name])})
