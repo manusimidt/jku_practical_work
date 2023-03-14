@@ -129,7 +129,8 @@ def random_rotation(images: np.ndarray, device, p=.5):
 
 def random_noise(images: np.ndarray, strength=0.05):
     noise = np.random.normal(0, strength, size=images.shape)
-    return images + noise
+    # make sure we dont have illegal pixel values (i.e.: 255.3 or 1.1)
+    return np.array(np.clip(images + noise, np.min(images), np.max(images)), dtype=images.dtype)
 
 
 def identity(images: np.ndarray):

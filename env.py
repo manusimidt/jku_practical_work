@@ -26,8 +26,8 @@ POSSIBLE_AUGMENTATIONS = [
     {'name': 'cut5', 'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
     {'name': 'cut15', 'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
     {'name': 'cut20', 'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
-    {'name': 'noise1', 'func': augmentations.random_noise, 'params': {'strength': 0.02}},
-    {'name': 'noise2', 'func': augmentations.random_noise, 'params': {'strength': 0.05}},
+    {'name': 'noise1', 'func': augmentations.random_noise, 'params': {'strength': 15}},
+    {'name': 'noise2', 'func': augmentations.random_noise, 'params': {'strength': 25}},
 ]
 
 
