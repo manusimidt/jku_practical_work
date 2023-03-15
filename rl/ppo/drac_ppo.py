@@ -125,6 +125,7 @@ class DrACPPO(PPO):
                 episode.total_reward += reward
 
                 # store agent trajectory
+                # todo what is reward scale
                 transition = AugmentedTransition(state=state_ori, augmented_state=state_aug, action=action,
                                                  reward=(reward * self.reward_scale), log_probs=log_probs)
                 episode.append(transition)
@@ -144,3 +145,4 @@ class DrACPPO(PPO):
                     if self.use_buffer_reset: self.buffer.reset()
 
                 state = next_state_ori
+                state_aug = next_state_aug

@@ -24,5 +24,6 @@ def set_seed(env, seed=None):
         np.random.seed(seed)
         torch.manual_seed(seed)
         if torch.cuda.is_available():
+            # TODO torch cuda set deterministric
             torch.cuda.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
