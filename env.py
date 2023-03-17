@@ -14,6 +14,7 @@ import augmentations
 
 from gym_jumping_task.envs import JumpTaskEnv
 import torchvision.transforms.functional as fn
+from torchvision.transforms.functional import InterpolationMode
 
 POSSIBLE_AUGMENTATIONS = [
     {'name': 'I', 'func': augmentations.identity, 'params': {}},
@@ -125,7 +126,7 @@ class AugmentingEnv(VanillaEnv):
         # The augmented observation can have a different width and height!!
         # compensate for that
         if not obs.shape == aug_obs.shape:
-            aug_obs = fn.resize(torch.from_numpy(aug_obs), size=[60, 60]).numpy()
+            aug_obs = fn.resize(torch.from_numpy(aug_obs), size=[60, 60], interpolation=InterpolationMode.NEAREST).numpy()
         return aug_obs
 
 

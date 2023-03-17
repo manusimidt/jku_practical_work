@@ -92,6 +92,7 @@ class DrACPPO(PPO):
             mse = torch.nn.MSELoss()
             G_V = mse(ori_values, aug_values)
 
+            # todo two different weights for the two different regularization terms 
             loss -= self.alpha * (G_pi + G_V)
             # ============ END DRAC CHANGES ============ #
 

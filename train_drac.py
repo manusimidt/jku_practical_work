@@ -47,7 +47,7 @@ for conf_name in train_conf.keys():
     logger2 = TensorboardLogger('./tensorboard2', run_id=run_name)
     tracker = Tracker(logger1, logger2)
 
-    drac = DrACPPO(policy, env, optimizer, seed=31, tracker=tracker, alpha=0.00)
+    drac = DrACPPO(policy, env, optimizer, seed=31, tracker=tracker, alpha=0.01)
     print("Training on ", drac.device)
     drac.learn(15_000)
     drac.save('./ckpts', run_name + '-15000', info={'conf': list(train_conf[conf_name])})

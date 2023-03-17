@@ -24,10 +24,9 @@ train_conf = {
         (36, 4), (38, 16), (43, 12), (44, 28),
     }
 }
-#environment = 'vanilla'
-#environment = 'random'
+# environment = 'vanilla'
+# environment = 'random'
 environment = 'UCB'
-
 
 for conf_name in train_conf.keys():
     current_configurations = list(train_conf[conf_name])
