@@ -28,31 +28,35 @@ train_conf = {
         (36, 4), (38, 16), (43, 12), (44, 28),
     }
 }
-environment = 'vanilla'
-# environment = 'random'
-# environment = 'UCB'
+#environment = 'vanilla_env'
+# environment = 'rnd_aug_env'
+environment = 'UCB_aug_env'
 
 seed = 31
 
-for conf_name in train_conf.keys():
+for conf_name in list(train_conf.keys())[1:]:
     current_configurations = list(train_conf[conf_name])
     env = None
     if 'vanilla' in environment:
         env = VanillaEnv(configurations=current_configurations)
-    elif 'random' in environment:
+    elif 'rnd' in environment:
         env = AugmentingEnv(configurations=current_configurations)
-    else:
+    elif 'UCB' in environment:
         env = UCBAugmentingEnv(configurations=current_configurations, c=170)
+    else:
+        exit(-1)
+
+
     set_seed(env, seed)
-    run_name = 'seed-test' + environment + '-' + conf_name
+    run_name = environment + '-' + conf_name
     print(f"====== Training {run_name} ======")
 
     policy: ActorCriticNet = ActorCriticNet()
     optimizer = optim.Adam(policy.parameters(), lr=0.001)
 
     logger1 = ConsoleLogger(log_every=1000, average_over=100)
-    # logger2 = TensorboardLogger('./tensorboard2', run_id=run_name)
-    tracker = Tracker(logger1)
+    logger2 = TensorboardLogger('./tensorboard3', run_id=run_name)
+    tracker = Tracker(logger1, logger2)
 
     ppo = PPO(policy, env, optimizer, seed=seed, tracker=tracker)
     print("Training on ", ppo.device)
