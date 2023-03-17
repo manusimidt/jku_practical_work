@@ -1,7 +1,5 @@
 """
 This module holds different modified jumping tasks environments
-All environments should return uint8 observations in range [0..255] because stable baselines
-expects image input to be in that range.
 """
 
 import gym
@@ -27,8 +25,8 @@ POSSIBLE_AUGMENTATIONS = [
     {'name': 'cut5', 'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
     {'name': 'cut15', 'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
     {'name': 'cut20', 'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
-    {'name': 'noise1', 'func': augmentations.random_noise, 'params': {'strength': 15}},
-    {'name': 'noise2', 'func': augmentations.random_noise, 'params': {'strength': 25}},
+    {'name': 'noise1', 'func': augmentations.random_noise, 'params': {'strength': .02}},
+    {'name': 'noise2', 'func': augmentations.random_noise, 'params': {'strength': .05}},
 ]
 
 
@@ -52,8 +50,8 @@ class VanillaEnv(gym.Env):
         # Jumping env has 2 possible actions
         self.num_actions = 2
         self.action_space = spaces.Discrete(self.num_actions)
-        self.observation_space = spaces.Box(low=0, high=255,
-                                            shape=(1, 60, 60), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=1,
+                                            shape=(1, 60, 60), dtype=np.float32)
         self.actualEnv = JumpTaskEnv(rendering=rendering)
 
     def _sample_conf(self):
@@ -66,12 +64,12 @@ class VanillaEnv(gym.Env):
 
     def step(self, action) -> tuple:
         obs, r, done, info = self.actualEnv.step(action)
-        return np.expand_dims((obs * 255).astype('uint8'), axis=0), float(r), done, info
+        return np.expand_dims(obs, axis=0), float(r), done, info
 
     def reset(self) -> np.ndarray:
         conf = self._sample_conf()
         obs = self.actualEnv._reset(obstacle_position=conf[0], floor_height=conf[1])
-        return np.expand_dims((obs * 255).astype('uint8'), axis=0)
+        return np.expand_dims(obs, axis=0)
 
     def render(self, mode="human"):
         pass
@@ -118,7 +116,7 @@ class AugmentingEnv(VanillaEnv):
 
     def _augment(self, obs):
         augmentation = self.current_augmentation
-        # convert the observation in the needed format (B x C x H x W) [0..255] int8
+        # convert the observation in the needed format (B x C x H x W)
         aug_obs = np.expand_dims(obs, axis=1)
         # augment the observation
         aug_obs = augmentation['func'](aug_obs, **augmentation['params'])
@@ -190,8 +188,8 @@ if __name__ == '__main__':
         env_checker.check_env(_env)
         _obs_arr = [_env.reset(), _env.step(0)[0], _env.step(0)[0], _env.step(0)[0], _env.step(1)[0]]
         for _obs in _obs_arr:
-            assert _obs.dtype == np.uint8, "Incorrect datatype"
+            assert _obs.dtype == np.float32, "Incorrect datatype"
             assert _obs.shape == (1, 60, 60), "Incorrect shape"
-            assert 0 in _obs, "No grey pixels present"
-            assert 127 in _obs, "No white pixels present"
-            assert 255 in _obs, "No black pixels present"
+            assert 0. in _obs, "No white pixels present"
+            assert .5 in _obs, "No grey pixels present"
+            assert 1. in _obs, "No black pixels present"
