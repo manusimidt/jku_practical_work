@@ -1,8 +1,12 @@
+import random
+import numpy as np
+import torch
 from rl.common.logger import ConsoleLogger, TensorboardLogger, Tracker
 from rl.ppo.policies import ActorCriticNet
 from rl.ppo.ppo import PPO
 from torch import optim
 from env import VanillaEnv, AugmentingEnv, UCBAugmentingEnv
+from rl.common.utils import set_seed
 
 train_conf = {
     "narrow_grid": {
@@ -24,9 +28,11 @@ train_conf = {
         (36, 4), (38, 16), (43, 12), (44, 28),
     }
 }
-# environment = 'vanilla'
+environment = 'vanilla'
 # environment = 'random'
-environment = 'UCB'
+# environment = 'UCB'
+
+seed = 31
 
 for conf_name in train_conf.keys():
     current_configurations = list(train_conf[conf_name])
@@ -37,20 +43,20 @@ for conf_name in train_conf.keys():
         env = AugmentingEnv(configurations=current_configurations)
     else:
         env = UCBAugmentingEnv(configurations=current_configurations, c=170)
-
-    run_name = environment + '-' + conf_name
+    set_seed(env, seed)
+    run_name = 'seed-test' + environment + '-' + conf_name
     print(f"====== Training {run_name} ======")
 
     policy: ActorCriticNet = ActorCriticNet()
     optimizer = optim.Adam(policy.parameters(), lr=0.001)
 
     logger1 = ConsoleLogger(log_every=1000, average_over=100)
-    logger2 = TensorboardLogger('./tensorboard2', run_id=run_name)
-    tracker = Tracker(logger1, logger2)
+    # logger2 = TensorboardLogger('./tensorboard2', run_id=run_name)
+    tracker = Tracker(logger1)
 
-    ppo = PPO(policy, env, optimizer, seed=31, tracker=tracker)
+    ppo = PPO(policy, env, optimizer, seed=seed, tracker=tracker)
     print("Training on ", ppo.device)
     ppo.learn(15_000)
     ppo.save('./ckpts', run_name + '-15000', info={'conf': list(train_conf[conf_name])})
-    ppo.learn(15_000)
-    ppo.save('./ckpts', run_name + '-30000', info={'conf': list(train_conf[conf_name])})
+    # ppo.learn(15_000)
+    # ppo.save('./ckpts', run_name + '-30000', info={'conf': list(train_conf[conf_name])})

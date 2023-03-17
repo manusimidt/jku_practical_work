@@ -32,7 +32,7 @@ class PPO:
         """
         :param gamma: discount rate
         """
-        if seed: set_seed(seed)
+        if seed: set_seed(env, seed, force=False)
         self.policy = policy.to(device)
         self.env = env
         self.optimizer = optimizer
