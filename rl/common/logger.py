@@ -63,11 +63,14 @@ class TensorboardLogger(Logger):
         pass
 
     def on_epoch_end(self, epoch: int, **kwargs):
-        pass
+        if 'losses' in kwargs and kwargs['losses']:
+            for loss_name in kwargs['losses']:
+                self.writer.add_scalar(f'loss/{loss_name}', kwargs['losses'][loss_name], epoch)
 
     def on_episode_end(self, episode: int, **kwargs):
         self.writer.add_scalar('rollout/ep_return', kwargs['episode_return'], episode)
         self.writer.add_scalar('rollout/ep_length', kwargs['episode_length'], episode)
+
         if 'aug_counts' in kwargs and kwargs['aug_counts']:
             self.writer.add_scalars('aug/ucb_counts', kwargs['aug_counts'], episode)
 
@@ -145,10 +148,10 @@ class Tracker:
         for logger in self.loggers:
             logger.on_step(self.epoch, action=action, reward=reward)
 
-    def end_epoch(self):
+    def end_epoch(self, losses: dict or None = None):
         self.epoch += 1
         for logger in self.loggers:
-            logger.on_epoch_end(self.epoch)
+            logger.on_epoch_end(self.epoch, losses=losses)
 
     def end_episode(self, aug_counts: list or None = None):
         """

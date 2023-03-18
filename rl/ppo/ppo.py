@@ -105,7 +105,11 @@ class PPO:
             self.optimizer.zero_grad()
             loss.mean().backward()
             self.optimizer.step()
-            self.tracker.end_epoch()
+            self.tracker.end_epoch({
+                "value_loss": value_loss.mean(),
+                "policy_loss": policy_loss.mean(),
+                "entropy_loss": entropy.view(-1, 1).mean()
+            })
 
     def learn(self, n_episodes) -> None:
         """

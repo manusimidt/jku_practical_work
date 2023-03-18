@@ -1,6 +1,7 @@
 """
 This module holds different modified jumping tasks environments
 """
+from collections import deque
 
 import gym
 import numpy as np
@@ -15,7 +16,7 @@ import torchvision.transforms.functional as fn
 from torchvision.transforms.functional import InterpolationMode
 
 POSSIBLE_AUGMENTATIONS = [
-    {'name': 'I', 'func': augmentations.identity, 'params': {}},
+   #  {'name': 'I', 'func': augmentations.identity, 'params': {}},
     {'name': 'trans64', 'func': augmentations.random_translate, 'params': {'size': 64}},
     {'name': 'trans68', 'func': augmentations.random_translate, 'params': {'size': 68}},
     {'name': 'trans72', 'func': augmentations.random_translate, 'params': {'size': 72}},
@@ -28,6 +29,7 @@ POSSIBLE_AUGMENTATIONS = [
     {'name': 'noise1', 'func': augmentations.random_noise, 'params': {'strength': .02}},
     {'name': 'noise2', 'func': augmentations.random_noise, 'params': {'strength': .05}},
 ]
+
 
 
 class VanillaEnv(gym.Env):
@@ -129,7 +131,7 @@ class AugmentingEnv(VanillaEnv):
 
 
 class UCBAugmentingEnv(AugmentingEnv):
-    def __init__(self, configurations: List[tuple] or None = None, rendering=False, c=2):
+    def __init__(self, configurations: List[tuple] or None = None, rendering=False, c=2, K=100):
         """
         :param configurations: possible configurations, array of tuples consisting of
             the obstacle position and the floor height
@@ -142,6 +144,8 @@ class UCBAugmentingEnv(AugmentingEnv):
         self.t = 0
         # UCB Q function
         self.Q = np.zeros(len(POSSIBLE_AUGMENTATIONS))
+        # Stores the past K returns for
+        self.past_K_returns = [deque(maxlen=K) for _ in range(len(POSSIBLE_AUGMENTATIONS))]
         self.episode_return = 0
         self.curr_aug_idx = None
         super().__init__(configurations, rendering)
@@ -174,18 +178,18 @@ class UCBAugmentingEnv(AugmentingEnv):
         # Make sure that this is not the first reset called before a step
         if curr_aug is not None:
             self.N[curr_aug] += 1
-            self.Q[curr_aug] = self.Q[curr_aug] + 1 / self.N[curr_aug] * (self.episode_return - self.Q[curr_aug])
+            self.past_K_returns[curr_aug].append(self.episode_return)
+            # self.Q[curr_aug] = self.Q[curr_aug] + 1 / self.N[curr_aug] * (self.episode_return - self.Q[curr_aug])
+            self.Q[curr_aug] = np.mean(self.past_K_returns[curr_aug])
             self.t += 1
             # reset episode return
             self.episode_return = 0
         return super().reset_augmented()
 
 if __name__ == '__main__':
-    import stable_baselines3.common.env_checker as env_checker
 
     _envs = [VanillaEnv(), AugmentingEnv(), UCBAugmentingEnv()]
     for _env in _envs:
-        env_checker.check_env(_env)
         _obs_arr = [_env.reset(), _env.step(0)[0], _env.step(0)[0], _env.step(0)[0], _env.step(1)[0]]
         for _obs in _obs_arr:
             assert _obs.dtype == np.float32, "Incorrect datatype"

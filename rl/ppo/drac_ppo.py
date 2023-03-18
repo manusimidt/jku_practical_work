@@ -1,5 +1,9 @@
 import gym
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
+
+import env
 from env import AugmentingEnv
 from rl.ppo.ppo import PPO
 from rl.common.buffer2 import RolloutBuffer, AugmentedTransition, Episode
@@ -13,7 +17,8 @@ class DrACPPO(PPO):
                  buffer: RolloutBuffer = RolloutBuffer(), seed: int or None = None, gamma=0.99, eps_clip=0.2,
                  reward_scale: float = 0.01, value_loss_scale: float = 0.5, policy_loss_scale: float = 1.0,
                  entropy_loss_scale: float = 0.01, use_buffer_reset=True, tracker: Tracker = Tracker(),
-                 device='cuda' if torch.cuda.is_available() else 'cpu', alpha: float = 0.1) -> None:
+                 device='cuda' if torch.cuda.is_available() else 'cpu',
+                 alpha_policy: float = 0.1, alpha_value: float = 0.01) -> None:
         super().__init__(policy, env, optimizer, metric, buffer, seed, gamma, eps_clip, reward_scale, value_loss_scale,
                          policy_loss_scale, entropy_loss_scale, use_buffer_reset, tracker, device)
         # Check if the environment is an instance of AugmentingEnv
@@ -21,7 +26,8 @@ class DrACPPO(PPO):
         assert isinstance(env, AugmentingEnv), "DrAC only works for augmenting envs!"
         self.env: AugmentingEnv = env
         # weight of the DrAC regularization term
-        self.alpha = alpha
+        self.alpha_policy = alpha_policy
+        self.alpha_value = alpha_value
 
     def train(self) -> None:
         """
@@ -82,6 +88,11 @@ class DrACPPO(PPO):
             ori_action_logits = self.policy.actor.forward(ori_state_t)
             aug_action_logits = self.policy.actor.forward(aug_state_t)
 
+            # plt.imshow(np.flipud(ori_state_t[234].cpu().numpy().squeeze()), cmap='gray', vmin=0, vmax=1)
+            # plt.show()
+            # plt.imshow(np.flipud(aug_state_t[234].cpu().numpy().squeeze()), cmap='gray', vmin=0, vmax=1)
+            # plt.show()
+
             ori_values = self.policy.critic.forward(ori_state_t)
             aug_values = self.policy.critic.forward(aug_state_t)
 
@@ -92,15 +103,21 @@ class DrACPPO(PPO):
             mse = torch.nn.MSELoss()
             G_V = mse(ori_values, aug_values)
 
-            # todo two different weights for the two different regularization terms 
-            loss -= self.alpha * (G_pi + G_V)
+            # loss -= self.alpha * (G_pi + G_V)
+            loss += (self.alpha_policy * G_pi + self.alpha_value * G_V)
             # ============ END DRAC CHANGES ============ #
 
             # perform training step
             self.optimizer.zero_grad()
             loss.mean().backward()
             self.optimizer.step()
-            self.tracker.end_epoch()
+            self.tracker.end_epoch({
+                "value_loss": value_loss.mean(),
+                "policy_loss": policy_loss.mean(),
+                "entropy_loss": entropy.view(-1, 1).mean(),
+                "policy_reg_loss": G_pi.mean(),
+                "value_reg_loss": G_V.mean()
+            })
 
     def learn(self, n_episodes) -> None:
         """
@@ -127,13 +144,18 @@ class DrACPPO(PPO):
 
                 # store agent trajectory
                 # todo what is reward scale
-                transition = AugmentedTransition(state=state_ori, augmented_state=state_aug, action=action,
+                transition = AugmentedTransition(state=state, augmented_state=state_aug, action=action,
                                                  reward=(reward * self.reward_scale), log_probs=log_probs)
                 episode.append(transition)
 
                 # update agent if done
                 if done:
-                    self.tracker.end_episode()
+                    if isinstance(self.env, env.UCBAugmentingEnv):
+                        aug_names = [a['name'] for a in env.POSSIBLE_AUGMENTATIONS]
+                        aug_counts = dict(zip(aug_names, self.env.N))
+                        self.tracker.end_episode(aug_counts=aug_counts)
+                    else:
+                        self.tracker.end_episode()
                     # add current episode to the replay buffer
                     self.buffer.add(episode)
 
