@@ -8,6 +8,7 @@ __pycache__/
 
 
 /ckpts
+/ckpts-final
 /best-ckpts
 
 # Distribution / packaging
@@ -136,3 +137,5 @@ dmypy.json
 .idea
 /tensorboard
 /tensorboard2
+/tensorboard3
+/tensorboard-final

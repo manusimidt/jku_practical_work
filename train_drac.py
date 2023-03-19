@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 
 from rl.common.logger import ConsoleLogger, TensorboardLogger, Tracker, FigureLogger
@@ -50,6 +52,7 @@ for environment in environments:
 
         set_seed(env, seed)
         run_name = 'DRAC-' + environment + '-' + conf_name
+        if run_name in [name.split('.')[0] for name in os.listdir('./ckpts-final')]: continue
         print(f"====== Training {run_name} ======")
 
         policy: ActorCriticNet = ActorCriticNet()
@@ -62,9 +65,9 @@ for environment in environments:
 
         drac = DrACPPO(policy, env, optimizer, seed=31, tracker=tracker, alpha_policy=0.2, alpha_value=0.05)
         print("Training on ", drac.device)
-        drac.learn(15)
+        drac.learn(15_000)
         drac.save('./ckpts-final', run_name + '-15000', info={'conf': list(train_conf[conf_name])})
-        drac.learn(15)
+        drac.learn(15_000)
         drac.save('./ckpts-final', run_name + '-30000', info={'conf': list(train_conf[conf_name])})
 
         fig = logger3.get_figure(fig_size=(8, 4))

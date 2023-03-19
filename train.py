@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 
 from rl.common.logger import ConsoleLogger, TensorboardLogger, Tracker, FigureLogger
@@ -52,6 +54,7 @@ for environment in environments:
 
         set_seed(env, seed)
         run_name = 'PPO-' + environment + '-' + conf_name
+        if run_name in [name.split('.')[0] for name in os.listdir('./ckpts-final')]: continue
         print(f"====== Training {run_name} ======")
 
         policy: ActorCriticNet = ActorCriticNet()
@@ -64,9 +67,9 @@ for environment in environments:
 
         ppo = PPO(policy, env, optimizer, seed=seed, tracker=tracker)
         print("Training on ", ppo.device)
-        ppo.learn(15)
+        ppo.learn(15_000)
         ppo.save('./ckpts-final', run_name + '-15000', info={'conf': list(train_conf[conf_name])})
-        ppo.learn(15)
+        ppo.learn(15_000)
         ppo.save('./ckpts-final', run_name + '-30000', info={'conf': list(train_conf[conf_name])})
 
         fig = logger3.get_figure(fig_size=(8, 4))
