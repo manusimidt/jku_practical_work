@@ -88,11 +88,6 @@ class DrACPPO(PPO):
             ori_action_logits = self.policy.actor.forward(ori_state_t)
             aug_action_logits = self.policy.actor.forward(aug_state_t)
 
-            # plt.imshow(np.flipud(ori_state_t[234].cpu().numpy().squeeze()), cmap='gray', vmin=0, vmax=1)
-            # plt.show()
-            # plt.imshow(np.flipud(aug_state_t[234].cpu().numpy().squeeze()), cmap='gray', vmin=0, vmax=1)
-            # plt.show()
-
             ori_values = self.policy.critic.forward(ori_state_t)
             aug_values = self.policy.critic.forward(aug_state_t)
 

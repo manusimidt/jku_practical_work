@@ -35,11 +35,12 @@ train_conf = {
 }
 # environment = 'rnd_aug_env'
 # environment = 'UCB_aug_env'
-environments = ['rnd_aug_env', 'UCB_aug_env']
+# environments = ['rnd_aug_env', 'UCB_aug_env']
+environments = ['rnd_aug_env']
 
 seed = 31
 for environment in environments:
-    for conf_name in train_conf.keys():
+    for conf_name in list(train_conf.keys())[1:]:
         current_configurations = list(train_conf[conf_name])
         env = None
 
@@ -51,7 +52,7 @@ for environment in environments:
             exit(-1)
 
         set_seed(env, seed)
-        run_name = 'DRAC-' + environment + '-' + conf_name
+        run_name = 'DRAC2-' + environment + '-' + conf_name
         if run_name in [name.split('.')[0] for name in os.listdir('./ckpts-final')]: continue
         print(f"====== Training {run_name} ======")
 
@@ -63,7 +64,7 @@ for environment in environments:
         logger3 = FigureLogger()
         tracker = Tracker(logger1, logger2, logger3)
 
-        drac = DrACPPO(policy, env, optimizer, seed=31, tracker=tracker, alpha_policy=0.2, alpha_value=0.05)
+        drac = DrACPPO(policy, env, optimizer, seed=31, tracker=tracker, alpha_policy=0.4, alpha_value=0.2)
         print("Training on ", drac.device)
         drac.learn(15_000)
         drac.save('./ckpts-final', run_name + '-15000', info={'conf': list(train_conf[conf_name])})

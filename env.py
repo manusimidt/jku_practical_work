@@ -16,7 +16,6 @@ import torchvision.transforms.functional as fn
 from torchvision.transforms.functional import InterpolationMode
 
 POSSIBLE_AUGMENTATIONS = [
-   #  {'name': 'I', 'func': augmentations.identity, 'params': {}},
     {'name': 'trans64', 'func': augmentations.random_translate, 'params': {'size': 64}},
     {'name': 'trans68', 'func': augmentations.random_translate, 'params': {'size': 68}},
     {'name': 'trans72', 'func': augmentations.random_translate, 'params': {'size': 72}},
