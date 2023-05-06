@@ -39,10 +39,10 @@ for conf_name in train_conf.keys():
     else:
         env = UCBAugmentingEnv(configurations=current_configurations, c=170)
 
-    run_name = environment + '-' + conf_name
+    run_name = environment + '-test' + conf_name
     print(f"====== Training {run_name} ======")
 
-    policy: ActorCriticNet = ActorCriticNet()
+    policy: ActorCriticNet = ActorCriticNet(obs_space=(1, 60, 60), action_space=2, hidden_size=128)
     optimizer = optim.Adam(policy.parameters(), lr=0.001)
 
     logger1 = ConsoleLogger(log_every=1000, average_over=100)
