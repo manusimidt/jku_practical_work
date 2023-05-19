@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.distributions import Categorical
+
 
 
 class ActorNet(nn.Module):
@@ -13,9 +15,9 @@ class ActorNet(nn.Module):
         super(ActorNet, self).__init__()
         C, H, W = obs_space
         self.features = nn.Sequential(
-            nn.Conv2d(in_channels=C, out_channels=8, kernel_size=3, stride=4),
+            nn.Conv2d(in_channels=C, out_channels=16, kernel_size=3, stride=2),
             nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=2),
+            nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2),
             nn.ReLU(),
@@ -46,6 +48,7 @@ class ActorNet(nn.Module):
 
 
 class CriticNet(nn.Module):
+
     def __init__(self, obs_space: tuple, hidden_size: int):
         super(CriticNet, self).__init__()
         C, H, W = obs_space
@@ -66,7 +69,7 @@ class CriticNet(nn.Module):
             nn.Linear(feature_shape, hidden_size),
             nn.LayerNorm(hidden_size, elementwise_affine=False),
             nn.ReLU(),
-            nn.Linear(128, 1)
+            nn.Linear(hidden_size, 1)
         )
 
     def forward(self, x):
@@ -92,8 +95,14 @@ class ActorCriticNet(nn.Module):
         action_logits = self.actor(state)
         dist = Categorical(logits=action_logits)
         action = dist.sample()
-        log_probs = dist.log_prob(action)
-        return action, log_probs
+        log_prob = dist.log_prob(action)
+        return action, log_prob
+
+    def act_deterministic(self, state):
+        action_logits = self.actor(state)
+        action = torch.argmax(action_logits, dim=1)
+        log_prob = torch.log(F.softmax(action_logits))[:,action].squeeze()
+        return action, log_prob
 
     def evaluate(self, state, action):
         action_logits = self.actor(state)
@@ -102,3 +111,4 @@ class ActorCriticNet(nn.Module):
         entropy = policy_dist.entropy()
         state_value = self.critic(state)
         return state_value, log_probs, entropy
+

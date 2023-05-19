@@ -25,10 +25,38 @@ POSSIBLE_AUGMENTATIONS = [
     {'name': 'cut5', 'func': augmentations.random_cutout, 'params': {'min_cut': 2, 'max_cut': 5}},
     {'name': 'cut15', 'func': augmentations.random_cutout, 'params': {'min_cut': 5, 'max_cut': 15}},
     {'name': 'cut20', 'func': augmentations.random_cutout, 'params': {'min_cut': 10, 'max_cut': 20}},
+    {'name': 'blur1', 'func': augmentations.gaussian_blur, 'params': {'sigma': .6}},
+    {'name': 'blur2', 'func': augmentations.gaussian_blur, 'params': {'sigma': 1.2}},
     {'name': 'noise1', 'func': augmentations.random_noise, 'params': {'strength': .02}},
     {'name': 'noise2', 'func': augmentations.random_noise, 'params': {'strength': .05}},
+    {'name': 'flip', 'func': augmentations.random_flip, 'params': {}},
 ]
 
+TRAIN_CONFIGURATIONS = {
+    "narrow_grid": {
+        # (obstacle_pos, floor_height)
+        (26, 12), (29, 12), (31, 12), (34, 12),
+        (26, 20), (29, 20), (31, 20), (34, 20),
+        (26, 28), (29, 28), (31, 28), (34, 28),
+    },
+    "wide_grid": {
+        # (obstacle_pos, floor_height)
+        (22, 8), (27, 8), (32, 8), (38, 8),
+        (22, 20), (27, 20), (32, 20), (38, 20),
+        (22, 32), (27, 32), (32, 32), (38, 32),
+    },
+    # "random_grid": {
+    #     # (obstacle_pos, floor_height)
+    #     (15, 36), (17, 8), (19, 20), (21, 32),
+    #     (26, 20), (30, 4), (32, 24), (34, 36),
+    #     (36, 4), (38, 16), (43, 12), (44, 28),
+    # },
+    # "diagonal_grid": {
+    #     # (obstacle_pos, floor_height)
+    #     (17, 8), (21, 12), (25, 16), (29, 20),
+    #     (32, 24), (36, 28), (40, 32), (44, 36),
+    # },
+}
 
 
 class VanillaEnv(gym.Env):
@@ -125,7 +153,8 @@ class AugmentingEnv(VanillaEnv):
         # The augmented observation can have a different width and height!!
         # compensate for that
         if not obs.shape == aug_obs.shape:
-            aug_obs = fn.resize(torch.from_numpy(aug_obs), size=[60, 60], interpolation=InterpolationMode.NEAREST).numpy()
+            aug_obs = fn.resize(torch.from_numpy(aug_obs), size=[60, 60],
+                                interpolation=InterpolationMode.NEAREST).numpy()
         return aug_obs
 
 
@@ -184,6 +213,7 @@ class UCBAugmentingEnv(AugmentingEnv):
             # reset episode return
             self.episode_return = 0
         return super().reset_augmented()
+
 
 if __name__ == '__main__':
 

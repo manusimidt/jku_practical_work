@@ -16,6 +16,7 @@ class PPO:
                  metric=torch.nn.MSELoss(),
                  buffer: RolloutBuffer = RolloutBuffer(),
                  seed: int or None = None,
+                 n_epochs: int = 4,
                  gamma=0.99,
                  eps_clip=0.2,
                  reward_scale: float = 0.01,
@@ -36,7 +37,7 @@ class PPO:
         self.metric = metric
         self.buffer = buffer
 
-        self.n_epochs = 4
+        self.n_epochs = n_epochs
         self.gamma = gamma
         self.eps_clip = eps_clip
         self.reward_scale = reward_scale

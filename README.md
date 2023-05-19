@@ -1,15 +1,23 @@
 # jku_practical_work
 
+
+| file                          | description                                                                            |
+|-------------------------------|----------------------------------------------------------------------------------------|
+| augmentations.py              | contains all augmentation functions, such as rotate, translate, noise..                |
+| env.py                        | contains different wrappers for the jumping-task env                                   |
+| train_bc.py                   | Training procedure for Behavioural Cloning                                             |
+| train_drac.py                 | Training procedure for Data-regularized Actor Critic                                   |
+| train_ppo.py                  | Training procedure for PPO                                                             |
+| visualize_augmentations.ipynb | Notebook that visualizes the different augmentations on the jumping-task env           |
+| visualize_configuration.ipynb | Notebook that visualizes the performance of a trained agent on a certain configuration |
+| visualize_env.ipynb           | Notebook that visualizes the jumping-task environment in different configurations      |
+
+
+
+
 ``` bash
     conda env create -f environment.yml
     conda activate drl-jumping
-    mkdir gym_jumping_task
-    mkdir gym_jumping_task/envs
-    wget https://raw.githubusercontent.com/google-research/jumping-task/master/gym_jumping_task/__init__.py -O gym_jumping_task/__init__.py
-    wget https://raw.githubusercontent.com/google-research/jumping-task/master/gym_jumping_task/envs/__init__.py -O gym_jumping_task/envs/__init__.py
-    wget https://raw.githubusercontent.com/google-research/jumping-task/master/gym_jumping_task/envs/jumping_colors_task.py -O gym_jumping_task/envs/jumping_colors_task.py 
-    wget https://raw.githubusercontent.com/google-research/jumping-task/master/gym_jumping_task/envs/jumping_coordinates_task.py -O gym_jumping_task/envs/jumping_coordinates_task.py
-    wget https://raw.githubusercontent.com/google-research/jumping-task/master/gym_jumping_task/envs/jumping_task.py -O gym_jumping_task/envs/jumping_task.py
 ```
 
 # these are needed for pyvirtualdisplay (to create a video of the episode)

@@ -7,6 +7,7 @@ augmented images in the same format. However it can be that height and width are
 
 import numpy as np
 import torch
+import torchvision.transforms as T
 
 
 def random_translate(images: np.ndarray, size, return_random_idxs=False, h1s=None, w1s=None):
@@ -57,7 +58,7 @@ def random_flip(images: np.ndarray, p=.5):
     out = mask * flipped_images + (1 - mask) * images
 
     out = out.view([bs, -1, h, w])
-    return out.type(torch.uint8).numpy()
+    return out.numpy()
 
 
 def random_crop(images: np.ndarray, out):
@@ -124,7 +125,15 @@ def random_rotation(images: np.ndarray, device, p=.5):
     out = masks[0] * images + masks[1] * rot90_images + masks[2] * rot180_images + masks[3] * rot270_images
 
     out = out.view([bs, -1, h, w])
-    return out.type(torch.uint8).numpy()
+    return out.numpy()
+
+
+def gaussian_blur(images: np.ndarray, kernel_size: int = 3, sigma: float = .5):
+    img_tensor = torch.from_numpy(images)
+    transform = T.GaussianBlur(kernel_size=kernel_size, sigma=sigma)
+    blur_img = transform(img_tensor).numpy()
+    # make sure we dont have illegal pixel values
+    return np.array(np.clip(blur_img, np.min(images), np.max(images)), dtype=images.dtype)
 
 
 def random_noise(images: np.ndarray, strength=0.05):

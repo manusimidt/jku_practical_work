@@ -1,7 +1,7 @@
 import abc
 import os
+import logging
 from collections import deque
-from pathlib import Path
 import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 class Logger(abc.ABC):
     """ Extracts and/or persists tracker information. """
+
     def __init__(self):
         pass
 
@@ -50,14 +51,23 @@ class ConsoleLogger(Logger):
         if not episode % self.log_every == 0: return
         msg = f"Episode: {str(episode).rjust(6)}, avg.ret.: {np.mean(self.return_queue):.4f} " \
               f"(over last {self.average_over} episodes)"
-        print(msg)
+        logging.info(msg)
 
 
 class TensorboardLogger(Logger):
-    def __init__(self, log_dir: str = './tensorboard', run_id: str = datetime.today().strftime('%Y-%m-%d-%H%M%S')):
+    def __init__(self, log_dir: str = './tensorboard', run_id: str = datetime.today().strftime('%Y-%m-%d-%H%M%S'),
+                 info: dict = {}):
         super().__init__()
         self.writer = SummaryWriter(log_dir=log_dir + os.sep + run_id)
+        self.writer.add_text('info/args', TensorboardLogger.dict2mdtable(info))
         print(f"Tensor board logging active. Start tensorboard with 'tensorboard --logdir {log_dir}'")
+
+    @staticmethod
+    def dict2mdtable(d, key='Name', val='Value'):
+        rows = [f'| {key} | {val} |']
+        rows += ['|--|--|']
+        rows += [f'| {k} | {v} |' for k, v in d.items()]
+        return "  \n".join(rows)
 
     def on_step(self, step: int, **kwargs):
         pass
@@ -73,6 +83,22 @@ class TensorboardLogger(Logger):
 
         if 'aug_counts' in kwargs and kwargs['aug_counts']:
             self.writer.add_scalars('aug/ucb_counts', kwargs['aug_counts'], episode)
+
+
+class WandBLogger(Logger):
+    def __init__(self, log_dir: str = './wandb', run_id: str = datetime.today().strftime('%Y-%m-%d-%H%M%S')):
+        super().__init__()
+        import wandb
+        print(f"Weights&Biases logger active. See results at {log_dir}'")
+
+    def on_step(self, step: int, **kwargs):
+        pass
+
+    def on_epoch_end(self, epoch: int, **kwargs):
+        pass
+
+    def on_episode_end(self, episode: int, **kwargs):
+        pass
 
 
 class FigureLogger(Logger):

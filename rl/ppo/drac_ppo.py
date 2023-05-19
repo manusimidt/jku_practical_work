@@ -13,14 +13,16 @@ from rl.ppo.policies import ActorCriticNet
 
 class DrACPPO(PPO):
 
-    def __init__(self, policy: ActorCriticNet, env: gym.Env, optimizer: torch.optim.Optimizer, metric=torch.nn.MSELoss(),
-                 buffer: RolloutBuffer = RolloutBuffer(), seed: int or None = None, gamma=0.99, eps_clip=0.2,
-                 reward_scale: float = 0.01, value_loss_scale: float = 0.5, policy_loss_scale: float = 1.0,
-                 entropy_loss_scale: float = 0.01, use_buffer_reset=True, tracker: Tracker = Tracker(),
+    def __init__(self, policy: ActorCriticNet, env: gym.Env, optimizer: torch.optim.Optimizer,
+                 metric=torch.nn.MSELoss(),
+                 buffer: RolloutBuffer = RolloutBuffer(), seed: int or None = None, n_epochs: int = 4, gamma=0.99,
+                 eps_clip=0.2, reward_scale: float = 0.01, value_loss_scale: float = 0.5,
+                 policy_loss_scale: float = 1.0, entropy_loss_scale: float = 0.01, use_buffer_reset=True,
+                 tracker: Tracker = Tracker(),
                  device='cuda' if torch.cuda.is_available() else 'cpu',
                  alpha_policy: float = 0.1, alpha_value: float = 0.01) -> None:
-        super().__init__(policy, env, optimizer, metric, buffer, seed, gamma, eps_clip, reward_scale, value_loss_scale,
-                         policy_loss_scale, entropy_loss_scale, use_buffer_reset, tracker, device)
+        super().__init__(policy, env, optimizer, metric, buffer, seed, n_epochs, gamma, eps_clip, reward_scale,
+                         value_loss_scale, policy_loss_scale, entropy_loss_scale, use_buffer_reset, tracker, device)
         # Check if the environment is an instance of AugmentingEnv
         # DrAC only works for augmenting environments!
         assert isinstance(env, AugmentingEnv), "DrAC only works for augmenting envs!"
