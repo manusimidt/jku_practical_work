@@ -41,22 +41,31 @@ which results in the following output:
 ```
 optional arguments:
   -h, --help            show this help message and exit
+  
   -e {vanilla,random,UCB}, --environment {vanilla,random,UCB}
                         The environment to train on
+                        
   -c {narrow_grid,wide_grid}, --configuration {narrow_grid,wide_grid}
                         The environment configuration to train on
+                        
   -a {PPO,DRAC}, --algorithm {PPO,DRAC}
                         The algorithm to train with
+                        
   -ne EPISODES, --episodes EPISODES
                         Number of episodes to train
+                        
   -hs HIDDEN_SIZE, --hidden_size HIDDEN_SIZE
                         Hidden size of the actor and critic network
+                        
   -lr LEARNING_RATE, --learning_rate LEARNING_RATE
                         Learning rate for the optimizer
+                        
   -bs BATCH_SIZE, --batch_size BATCH_SIZE
                         Size of the minibatch used for one gradient update
+                        
   -ap ALPHA_POLICY, --alpha_policy ALPHA_POLICY
                         DrAC alpha weight for policy regularization loss
+                        
   -av ALPHA_VALUE, --alpha_value ALPHA_VALUE
                         DrAC alpha weight for value regularization loss
 ```
