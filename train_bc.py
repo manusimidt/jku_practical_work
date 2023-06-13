@@ -1,5 +1,5 @@
 import numpy as np
-from env import VanillaEnv, TRAIN_CONFIGURATIONS
+from env import VanillaEnv, TRAIN_CONFIGURATIONS, AugmentingEnv
 from rl.common.buffer2 import Transition, Episode
 from rl.ppo.policies import ActorCriticNet
 import torch
@@ -141,7 +141,8 @@ for environment in environments:
         run_name = 'BC-' + environment + '-' + conf_name
         print(f"====== Training on {run_name} ======")
 
-        env = VanillaEnv(configurations=list(TRAIN_CONFIGURATIONS[conf_name]), rendering=True)
+        confs = list(TRAIN_CONFIGURATIONS[conf_name])
+        env = VanillaEnv(confs) if 'vanilla' in environment else AugmentingEnv(confs)
 
         print(f"Generating {n_episodes} expert episodes...")
         trainloader, testloader = generate_expert_trajectories(env, n_episodes)

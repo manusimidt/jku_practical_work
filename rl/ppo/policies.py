@@ -101,7 +101,7 @@ class ActorCriticNet(nn.Module):
     def act_deterministic(self, state):
         action_logits = self.actor(state)
         action = torch.argmax(action_logits, dim=1)
-        log_prob = torch.log(F.softmax(action_logits))[:,action].squeeze()
+        log_prob = torch.log(F.softmax(action_logits, dim=0))[:, action].squeeze()
         return action, log_prob
 
     def evaluate(self, state, action):

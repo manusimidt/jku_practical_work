@@ -5,7 +5,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 from rl.common.buffer2 import RolloutBuffer
-from rl.common.logger import ConsoleLogger, TensorboardLogger, Tracker, FigureLogger
+from rl.common.logger import ConsoleLogger, TensorboardLogger, Tracker, FigureLogger, WandBLogger
 from rl.ppo.drac_ppo import DrACPPO
 from rl.ppo.policies import ActorCriticNet
 from rl.ppo.ppo import PPO
@@ -14,6 +14,8 @@ from env import VanillaEnv, AugmentingEnv, UCBAugmentingEnv, TRAIN_CONFIGURATION
 from rl.common.utils import set_seed
 import logging
 import argparse
+
+from validate import validate
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-e", "--environment", choices=["vanilla", "random", "UCB"], default="vanilla",
@@ -24,8 +26,15 @@ parser.add_argument("-a", "--algorithm", choices=["PPO", "DRAC"], default="PPO",
                     help="The algorithm to train with")
 parser.add_argument("-ne", "--episodes", default=30000, type=int,
                     help="Number of episodes to train")
-parser.add_argument("-hs", "--hidden_size", default=128, type=int,
+parser.add_argument("-hs", "--hidden_size", default=256, type=int,
                     help="Hidden size of the actor and critic network")
+
+parser.add_argument("-lr", "--learning_rate", default=0.001, type=float,
+                    help="Learning rate for the optimizer")
+
+parser.add_argument("-bs", "--batch_size", default=1000, type=int,
+                    help="Size of the minibatch used for one gradient update")
+
 parser.add_argument("-ap", "--alpha_policy", default=0.4, type=float,
                     help="DrAC alpha weight for policy regularization loss")
 parser.add_argument("-av", "--alpha_value", default=0.2, type=float,
@@ -49,7 +58,6 @@ logging.basicConfig(
 )
 
 seed = 31
-episodes = 30000
 
 conf = list(TRAIN_CONFIGURATIONS[args.configuration])
 env = None
@@ -65,24 +73,28 @@ set_seed(env, seed)
 print(f"Started Training, logfile: {run_name}.log")
 
 policy: ActorCriticNet = ActorCriticNet(obs_space=(1, 60, 60), action_space=2, hidden_size=args.hidden_size)
-optimizer = optim.Adam(policy.parameters(), lr=0.001)
+optimizer = optim.Adam(policy.parameters(), lr=args.learning_rate)
 
 logger1 = ConsoleLogger(log_every=1000, average_over=100)
-logger2 = TensorboardLogger('./tensorboard', run_id=run_name, info=vars(args))
-logger3 = FigureLogger()
-tracker = Tracker(logger1, logger2, logger3)
+logger2 = FigureLogger()
+logger3 = TensorboardLogger('./tensorboard', run_id=run_name, info=vars(args))
+logger4 = WandBLogger('practical work', info=vars(args))
+tracker = Tracker(logger1, logger2, logger3, logger4)
 
-buffer = RolloutBuffer(capacity=10_000, batch_size=1024, min_transitions=10_000)
+buffer = RolloutBuffer(capacity=2000, batch_size=args.batch_size, min_transitions=2000)
 if args.algorithm == "PPO":
-    alg = PPO(policy, env, optimizer, seed=seed, tracker=tracker, n_epochs=10)
+    alg = PPO(policy, env, optimizer, seed=seed, tracker=tracker, buffer=buffer, n_epochs=10)
 else:
-    alg = DrACPPO(policy, env, optimizer, seed=31, tracker=tracker, alpha_policy=args.alpha_policy,
-                  alpha_value=args.alpha_value)
+    alg = DrACPPO(policy, env, optimizer, seed=31, tracker=tracker, buffer=buffer, n_epochs=10,
+                  alpha_policy=args.alpha_policy, alpha_value=args.alpha_value)
 
 logging.info("Training on " + alg.device)
-alg.learn(episodes)
-alg.save(run_path, str(episodes), info={'conf': conf})
+alg.learn(args.episodes)
+alg.save(run_path, str(args.episodes), info={'conf': conf})
 
-fig = logger3.get_figure(fig_size=(8, 4))
-fig.suptitle(f"Training {run_name} for {episodes} episodes")
+fig = logger2.get_figure(fig_size=(8, 4))
+fig.suptitle(f"Training {run_name} for {args.episodes} episodes")
 plt.savefig(run_path + os.sep + 'training.png')
+
+gp = validate(alg.policy, seed)
+logging.info(f"Generalization performance (across all configurations): {gp:.4f}")

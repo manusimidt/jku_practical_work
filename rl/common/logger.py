@@ -7,6 +7,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib
 from torch.utils.tensorboard import SummaryWriter
+import wandb
 
 
 class Logger(abc.ABC):
@@ -86,19 +87,20 @@ class TensorboardLogger(Logger):
 
 
 class WandBLogger(Logger):
-    def __init__(self, log_dir: str = './wandb', run_id: str = datetime.today().strftime('%Y-%m-%d-%H%M%S')):
+    def __init__(self, project: str, info: dict):
         super().__init__()
-        import wandb
-        print(f"Weights&Biases logger active. See results at {log_dir}'")
+        wandb.init(project=project, config=info)
+        print(f"Weights&Biases logger active. See results in project {project}'")
 
     def on_step(self, step: int, **kwargs):
         pass
 
     def on_epoch_end(self, epoch: int, **kwargs):
-        pass
+        if 'losses' in kwargs and kwargs['losses']:
+            wandb.log(kwargs['losses'])
 
     def on_episode_end(self, episode: int, **kwargs):
-        pass
+        wandb.log({"episode/return": kwargs['episode_return'], "episode/length": kwargs['episode_length']})
 
 
 class FigureLogger(Logger):
